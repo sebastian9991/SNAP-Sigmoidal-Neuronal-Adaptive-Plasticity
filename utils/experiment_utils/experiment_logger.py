@@ -1,4 +1,5 @@
 import logging
+import os
 
 DEFAULT_LEVEL = logging.INFO
 DEFAULT_FORMAT = logging.Formatter(
@@ -27,11 +28,20 @@ def configure_logger(
     """
     logger: logging.Logger = logging.getLogger(name)
     logger.setLevel(level)
-    handler: logging.Handler = logging.FileHandler(file)
-    handler.setLevel(level)
-    handler.setFormatter(format)
-    logger.addHandler(handler)
-    logger.propagate = False
+
+    # Prevent adding duplicate handlers
+    if not logger.handlers:
+        # Ensure the directory exists
+        os.makedirs(os.path.dirname(file), exist_ok=True)
+
+        # Create a file handler
+        handler = logging.FileHandler(file)
+        handler.setLevel(level)
+        handler.setFormatter(format)
+
+        logger.addHandler(handler)
+        logger.propagate = False
+
     return logger
 
 

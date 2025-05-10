@@ -2,13 +2,13 @@ import itertools
 import logging
 import sys
 
-from tests.sequential_tests.base_scripts_seq.seq_train_forget import run_experiment_direct
+from tests.sequential_tests.base_scripts_seq.seq_train_forget import \
+    run_experiment_direct
+from utils.experiment_utils.experiment_logger import *
 
 # Logging setup
-logging.basicConfig(
-    filename="experiment_softhebb_results.log",
-    level=logging.INFO,
-    format="%(asctime)s - %(message)s",
+results_log = configure_logger(
+    "Experiement Log sequential", "./log/experiment_softhebb_results.log"
 )
 
 # Experiment parameters
