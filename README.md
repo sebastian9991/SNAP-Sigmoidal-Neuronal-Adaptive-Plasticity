@@ -17,10 +17,10 @@ pip install uv
 
 ```sh
 # Clone the repo
-git clone git@github.com:sebastian9991/Stress-Test-on-RL-Algorithms.git
+git clone git@github.com:sebastian9991/SNAP-Sigmoidal-Neuronal-Adaptive-Plasticity.git
 
 # Enter the repo directory
-cd Stress-Test-on-RL-Algorithms
+SNAP-Sigmoidal-Neuronal-Adaptive-Plasticity
 
 # Install core dependencies into an isolated environment
 uv sync
