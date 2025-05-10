@@ -3,7 +3,7 @@ import logging
 import subprocess
 import sys
 
-from utils.experiment_constants import Focus
+from utils.experiment_utils.experiment_constants import Focus
 
 # Set up logging
 logging.basicConfig(

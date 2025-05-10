@@ -1,10 +1,9 @@
-import math
 import os
 from typing import Tuple
 
 import matplotlib.pyplot as plt
 import models.utils.helper_modules as M
-import models.learning as L
+import models.utils.learning as L
 import numpy as np
 import torch
 import torch.nn as nn
