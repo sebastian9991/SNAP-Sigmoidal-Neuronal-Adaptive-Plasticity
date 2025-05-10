@@ -28,4 +28,4 @@ uv sync
 
 ## Usage
 
-### Running Full SNAP Experiements
+### Running Full SNAP Experiments
