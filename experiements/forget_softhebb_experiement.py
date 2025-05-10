@@ -7,17 +7,15 @@ from argparse import Namespace
 from collections import Counter
 from typing import Tuple, Type, Union
 
-import matplotlib.pyplot as plt
 import torch
-from interfaces.experiment import Experiment
-from interfaces.layer import NetworkLayer
-from interfaces.network import Network
-from layers.base.data_setup_layer import DataSetupLayer
-from layers.input_layer import InputLayer
 from torch.nn import Module
 from torch.nn.functional import one_hot
 from torch.utils.data import DataLoader, TensorDataset
 
+from interfaces.experiment import Experiment
+from interfaces.network import Network
+from layers.base.data_setup_layer import DataSetupLayer
+from layers.input_layer import InputLayer
 # Utils imports
 from utils.experiment_utils.experiment_constants import (DataSets,
                                                          ExperimentPhases,

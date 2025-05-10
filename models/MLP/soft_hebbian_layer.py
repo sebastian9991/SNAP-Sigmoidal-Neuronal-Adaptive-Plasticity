@@ -1,16 +1,15 @@
 import os
 from typing import Tuple
 
-import matplotlib.pyplot as plt
-import models.utils.helper_modules as M
-import models.utils.learning as L
-import numpy as np
 import torch
 import torch.nn as nn
 from dotwiz import DotWiz
-from models.hyperparams import (Inhibition, InputProcessing, LearningRule,
-                                WeightGrowth)
 from utils.experiment_constants import Focus
+
+import models.utils.helper_modules as M
+import models.utils.learning as L
+from models.utils.hyperparams import (Inhibition, InputProcessing,
+                                      LearningRule, WeightGrowth)
 
 
 class SoftHebbLayer(nn.Module):
@@ -40,7 +39,6 @@ class SoftHebbLayer(nn.Module):
         self.input_dim: int = inputdim
         self.output_dim: int = outputdim
 
-        print(f"OUTPUT DIM is {outputdim}")
         self.K = K
         self.focus = focus
         self.triangle: bool = triangle
@@ -171,41 +169,38 @@ class SoftHebbLayer(nn.Module):
             self.learn_weights(inference_output, target=target)
         return inference_output.y
 
-    def plot_wn_distribution(self, epoch, count):
-        """
-        Plot the weight norm distribution stored in self.wn.
-        Call this method at the end of an epoch.
-        """
-        if self.wn is None:
-            print("No weight norms recorded for this epoch.")
-            return
 
-        # Convert self.wn to a numpy array
-        wn_np = self.wn.cpu().numpy().flatten()
-        # Remove nan-values (matplot plt.() can't deal with Nan indexes)
-        wn_np = wn_np[~np.isnan(wn_np)]
+class SoftNeuralNet(nn.Module):
+    def __init__(self, device, hsize):
+        super(SoftNeuralNet, self).__init__()
+        self.layers = nn.ModuleDict()
+        self.iteration = 3
+        self.output_dim = 10
+        self.device = device
+        self.hsize = hsize
 
-        # Create a folder for the plots
-        plot_folder = os.path.join(
-            os.getcwd(), f"Focus_{self.focus}_with_K_{self.K}_wn_plots"
-        )
-        if not os.path.exists(plot_folder):
-            os.makedirs(plot_folder)
+    def add_layer(self, name, layer):
+        self.layers[name] = layer
 
-        # Determine layer type for the filename
-        layer_type = "output" if self.is_output_layer else "hidden"
-        plot_filename = os.path.join(
-            plot_folder, f"Task_{count}_wn_distribution_{layer_type}_epoch_{epoch}.png"
-        )
+    def forward(self, x, clamped=None):
+        for layer in self.layers.values():
+            x = layer.forward(x, target=clamped)
+        return x
 
-        plt.figure()
-        plt.hist(wn_np, bins=50, alpha=0.75)
-        plt.title(
-            f"Weight Norm Distribution ({layer_type.capitalize()} Layer) - Epoch {epoch} - K = {self.K}"
-        )
-        plt.xlabel("Weight Norm")
-        plt.ylabel("Frequency")
-        plt.grid(True)
-        plt.savefig(plot_filename)
-        plt.close()
-        print(f"Saved weight norm plot: {plot_filename}")
+    def forward_test(self, x):
+        for layer in self.layers.values():
+            x = layer.forward(x)
+        return x
+
+    def set_iteration(self, i):
+        self.iteration = i
+
+    def save_model(self, path):
+        torch.save(self.state_dict(), path)
+
+    def set_training_layers(self, layers_to_train):
+        for layer in self.layers.values():
+            if layer in layers_to_train:
+                layer.train()
+            else:
+                layer.eval()

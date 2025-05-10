@@ -1,16 +1,14 @@
 import multiprocessing
 from typing import List, Tuple
 
-import torch
 from experiments.forget_softhebb_experiment import ForgetExperiment
+
 from interfaces.experiment import Experiment
 from interfaces.network import Network
-from models.hebbian_network import HebbianNetwork
-from utils.experiment_logger import *
-from utils.experiment_parser import *
-from utils.experiment_stats import *
-
-from models.MLP.models import NewMLPBaseline_Model
+from models.MLP.models import MLPBaseline
+from utils.experiment_utils.experiment_logger import *
+from utils.experiment_utils.experiment_parser import *
+from utils.experiment_utils.experiment_stats import *
 
 # Create log
 results_log = configure_logger("Forget Result Log", "./results/results_forget.log")
@@ -30,7 +28,7 @@ def train_and_eval(args: Tuple) -> List[List[float]]:
 
     num: int
     params, num = args
-    model: Network = NewMLPBaseline_Model(
+    model: Network = MLPBaseline(
         params.K,
         params.focus,
         params.hsize,
