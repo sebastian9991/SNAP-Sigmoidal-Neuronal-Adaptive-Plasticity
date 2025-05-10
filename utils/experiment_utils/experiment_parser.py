@@ -147,3 +147,5 @@ def parse_arguments(args_list: Optional[List] = None) -> argparse.Namespace:
     )
 
     return args
+
+

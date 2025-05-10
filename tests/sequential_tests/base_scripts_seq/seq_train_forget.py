@@ -2,13 +2,11 @@ import argparse
 from typing import List, Tuple
 
 from experiments.forget_softhebb_experiment import ForgetExperiment
-
 from interfaces.experiment import Experiment
 from interfaces.network import Network
-from models.MLP.models import MLPBaseline
+from models.MLP.baseline_mlp import MLPBaseline
 from utils.experiment_utils.experiment_logger import configure_logger
-from utils.experiment_utils.experiment_parser import parse_arguments_from_list
-from utils.experiment_utils.experiment_stats import *
+from utils.experiment_utils.experiment_parser import *
 
 # Create log
 results_log = configure_logger("Forget Result Log", "./results/results_forget.log")
@@ -17,7 +15,7 @@ results_log = configure_logger("Forget Result Log", "./results/results_forget.lo
 def run_experiment_direct(
     arg_list: List[str],
 ) -> Tuple[List[List[float]], List[List[float]]]:
-    params = parse_arguments_from_list(arg_list)
+    params = parse_arguments(arg_list)
 
     model: Network = MLPBaseline(
         params.K,

@@ -19,7 +19,7 @@ from layers.input_layer import InputLayer
 # Utils imports
 from utils.experiment_utils.experiment_constants import (DataSets,
                                                          ExperimentPhases,
-                                                         LayerNames, Purposes)
+                                                         Purposes)
 from utils.experiment_utils.experiment_logger import *
 from utils.experiment_utils.experiment_parser import *
 from utils.experiment_utils.experiment_timer import *

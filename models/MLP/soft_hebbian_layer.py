@@ -4,12 +4,12 @@ from typing import Tuple
 import torch
 import torch.nn as nn
 from dotwiz import DotWiz
-from utils.experiment_constants import Focus
 
 import models.utils.helper_modules as M
 import models.utils.learning as L
 from models.utils.hyperparams import (Inhibition, InputProcessing,
                                       LearningRule, WeightGrowth)
+from utils.experiment_utils.experiment_constants import Focus
 
 
 class SoftHebbLayer(nn.Module):

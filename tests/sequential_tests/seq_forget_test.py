@@ -2,8 +2,7 @@ import itertools
 import logging
 import sys
 
-from tests.sequential_tests.base_scripts_seq import
-    run_experiment_direct
+from tests.sequential_tests.base_scripts_seq.seq_train_forget import run_experiment_direct
 
 # Logging setup
 logging.basicConfig(

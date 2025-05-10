@@ -2,9 +2,9 @@ import sys
 
 import scipy
 import torch
-import torch.nn as nn
-from models.hyperparams import Inhibition
-from utils.experiment_constants import Focus, WeightGrowth
+
+from models.utils.hyperparams import Inhibition
+from utils.experiment_utils.experiment_constants import Focus, WeightGrowth
 
 
 def update_weight_softhebb(
