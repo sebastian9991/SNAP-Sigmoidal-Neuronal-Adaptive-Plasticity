@@ -5,14 +5,17 @@ import sys
 from tests.sequential_tests.base_scripts_seq.seq_train_forget import \
     run_experiment_direct
 from utils.experiment_utils.experiment_logger import *
+from utils.utils_root import *
+from utils.utils_root import get_project_root
 
 # Logging setup
 results_log = configure_logger(
     "Experiement Log sequential", "./log/experiment_softhebb_results.log"
 )
+#Root folder
+project_root = get_project_root(levels_up = 1)
 
 # Experiment parameters
-available_gpus = [1]
 batch_sizes = [16]
 hidden_sizes = [1024]
 parameter_pairs = [(0.5, 1, 0.003)]
@@ -21,6 +24,8 @@ K_values = [0.03, 1, 100, 1000]
 K = K_values[0]
 focuses = ["NEURON", "SYNAPSE"]
 growth_parameters = ["LINEAR", "SIGMOID", "EXPONENTIAL"]
+
+
 
 # Sequential execution
 for focus in focuses:
@@ -40,15 +45,15 @@ for focus in focuses:
                     args_list = [
                         "--data_name=MNIST",
                         f"--experiment_name={exp_name}",
-                        "--train_data=data/mnist/train-images.idx3-ubyte",
-                        "--train_label=data/mnist/train-labels.idx1-ubyte",
-                        "--test_data=data/mnist/test-images.idx3-ubyte",
-                        "--test_label=data/mnist/test-labels.idx1-ubyte",
+                        f"--train_data={project_root}/data/mnist/train-images.idx3-ubyte",
+                        f"--train_label={project_root}/data/mnist/train-labels.idx1-ubyte",
+                        f"--test_data={project_root}/data/mnist/test-images.idx3-ubyte",
+                        f"--test_label={project_root}/data/mnist/test-labels.idx1-ubyte",
                         "--train_size=60000",
                         "--test_size=10000",
                         "--classes=10",
-                        "--train_fname=data/mnist/mnist_train.csv",
-                        "--test_fname=data/mnist/mnist_test.csv",
+                        f"--train_fname={project_root}/data/mnist/mnist_train.csv",
+                        f"--test_fname={project_root}/data/mnist/mnist_test.csv",
                         "--input_dim=784",
                         f"--heb_dim={hsize}",
                         "--output_dim=10",
@@ -80,7 +85,7 @@ for focus in focuses:
                         f"--hsize={hsize}",
                         f"--batch_size={batch_size}",
                         "--epochs=10",
-                        f"--device=cuda:{available_gpus[0]}",
+                        f"--device={'cuda'}",
                         "--local_machine=True",
                         "--experiment_type=forget",
                         f"--K={K}",
