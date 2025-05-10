@@ -20,7 +20,7 @@ pip install uv
 git clone git@github.com:sebastian9991/SNAP-Sigmoidal-Neuronal-Adaptive-Plasticity.git
 
 # Enter the repo directory
-SNAP-Sigmoidal-Neuronal-Adaptive-Plasticity
+cd SNAP-Sigmoidal-Neuronal-Adaptive-Plasticity
 
 # Install core dependencies into an isolated environment
 uv sync
