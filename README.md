@@ -10,15 +10,9 @@
 
 <div align="center">
 
-  <a href="https://github.com/sebastian9991/your-repo/graphs/contributors">
-    <img src="https://img.shields.io/github/contributors/sebastian9991/SNAP-Sigmoidal-Neuronal-Adaptive-Plasticity.svg" alt="Contributors" />
-  </a>
-  <a href="https://github.com/sebastian9991/your-repo/issues">
-    <img src="https://img.shields.io/github/issues/sebastian9991/SNAP-Sigmoidal-Neuronal-Adaptive-Plasticity.svg" alt="Issues" />
-  </a>
-  <a href="https://github.com/sebastian9991/your-repo/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/sebastian9991/SNAP-Sigmoidal-Neuronal-Adaptive-Plasticity.svg" alt="License" />
-  </a>
+<a href="">[![Contributors][contributors-shield]][contributors-url]</a>
+<a href="">[![Issues][issues-shield]][issues-url]</a>
+<a href="">[![MIT License][license-shield]][license-url]</a>
 
 </div>
 
@@ -51,3 +45,11 @@ uv sync
 ## Usage
 
 ### Running Full SNAP Experiments
+
+
+[contributors-shield]: https://img.shields.io/github/contributors/sebastian9991/SNAP-Sigmoidal-Neuronal-Adaptive-Plasticity.svg?style=for-the-badge
+[contributors-url]: https://github.com/sebastian9991/SNAP-Sigmoidal-Neuronal-Adaptive-Plasticity/graphs/contributors
+[issues-shield]: https://img.shields.io/github/issues/sebastian9991/SNAP-Sigmoidal-Neuronal-Adaptive-Plasticity.svg?style=for-the-badge
+[issues-url]: https://github.com/sebastian9991/SNAP-Sigmoidal-Neuronal-Adaptive-Plasticity/issues
+[license-shield]: https://img.shields.io/github/license/sebastian9991/SNAP-Sigmoidal-Neuronal-Adaptive-Plasticity.svg?style=for-the-badge
+[license-url]: https://github.com/sebastian9991/SNAP-Sigmoidal-Neuronal-Adaptive-Plasticity/blob/master/LICENSE.txt
