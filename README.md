@@ -1,6 +1,24 @@
 # SNAP-Sigmoidal-Neuronal-Adaptive-Plasticity
 SNAP an approximation to Long-Term Potentiation for ANNs to reduce catastrophic forgetting. 
 
+<a id="readme-top"></a>
+
+<div align="center">
+  <h1 style="font-size:3vw;padding:0;margin:0;display:inline">SNAP</h3>
+  <h3 style="margin:0">SNAP an approximation to Long-Term Potentiation</h3>
+  <a href="https://arxiv.org/abs/2503.12667"><strong>Read the paper»</strong></a>
+</div>
+
+<br />
+
+<div align="center">
+
+<a href="">[![Contributors][contributors-shield]][contributors-url]</a>
+<a href="">[![Issues][issues-shield]][issues-url]</a>
+<a href="">[![MIT License][license-shield]][license-url]</a>
+
+</div>
+
 ## Getting Started
 
 ### Prerequisites
