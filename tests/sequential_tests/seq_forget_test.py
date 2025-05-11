@@ -1,9 +1,7 @@
 import itertools
 import logging
-import sys
 
-from tests.sequential_tests.base_scripts_seq.seq_train_forget import \
-    run_experiment_direct
+from tests.sequential_tests.base_scripts_seq.seq_train_forget import *
 from utils.experiment_utils.experiment_logger import *
 from utils.utils_root import *
 from utils.utils_root import get_project_root
@@ -12,19 +10,17 @@ from utils.utils_root import get_project_root
 results_log = configure_logger(
     "Experiement Log sequential", "./log/experiment_softhebb_results.log"
 )
-#Root folder
-project_root = get_project_root(levels_up = 1)
+# Root folder
+project_root = get_project_root(levels_up=1)
 
 # Experiment parameters
 batch_sizes = [16]
 hidden_sizes = [1024]
 parameter_pairs = [(0.5, 1, 0.003)]
 other_parameters = [("sanger", "sigmoid", "sigmoid", "neuron", "RELU", "neuron")]
-K_values = [0.03, 1, 100, 1000]
-K = K_values[0]
-focuses = ["NEURON", "SYNAPSE"]
-growth_parameters = ["LINEAR", "SIGMOID", "EXPONENTIAL"]
-
+K = 1
+focuses = ["NEURON"]
+growth_parameters = ["LINEAR"]
 
 
 # Sequential execution

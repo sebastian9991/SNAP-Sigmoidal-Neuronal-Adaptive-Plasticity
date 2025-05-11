@@ -454,54 +454,8 @@ class ForgetExperiment(Experiment):
         full_list_of_accuracy = list_of_test_accuracy + list_of_train_accuracy
         return full_list_of_accuracy
 
-    # Concatenating the lists
-    #    So, the entries will be the order as follows:
-    #    TEST ACCURACY SECTION
-    #        digits 0 and 1 test accuracy
-    #        digits 2 and 3 test accuracy
-    #        digits 4 and 5 test accuracy
-    #        digits 6 and 7 test accuracy
-    #        digits 8 and 9 test accuracy
-    #    TRAIN ACCURACY SECTION
-    #        digits 0 and 1 train accuracy
-    #        digits 2 and 3 train accuracy
-    #        digits 4 and 5 train accuracy
-    #        digits 6 and 7 train accuracy
-    #        digits 8 and 9 train accuracy
-
     def _param_start_log(self):
         self.EXP_LOG.info("Started logging of experiment parameters.")
-
-    #        self.PARAM_LOG.info(f"Experiment Type: {self.experiment_type.value.lower().capitalize()}")
-    #        self.PARAM_LOG.info(f"Device: {self.device.upper()}")
-    #        self.PARAM_LOG.info(f"Input Dimension: {self.model.input_dim}")
-    #        self.PARAM_LOG.info(f"Hebbian Layer Dimension: {self.model.heb_dim}")
-    #        self.PARAM_LOG.info(f"Outout Dimension: {self.model.output_dim}")
-    #        self.PARAM_LOG.info(f"Hebbian Layer Lambda: {self.model.heb_lamb}")
-    #        self.PARAM_LOG.info(f"Hebbian Layer Gamma: {self.model.heb_gam}")
-    #        self.PARAM_LOG.info(f"Hebbian Layer Epsilon: {self.model.heb_eps}")
-    #        self.PARAM_LOG.info(f"Hebbian Learning Rule: {self.model.heb_learn.value.lower().capitalize()}")
-    #        self.PARAM_LOG.info(f"Hebbian Inhibition Rule: {self.model.heb_inhib.value.lower().capitalize()}")
-    #        self.PARAM_LOG.info(f"Hebbian Weight Growth: {self.model.heb_growth.value.lower().capitalize()}")
-    #        self.PARAM_LOG.info(f"Hebbian Bias Update: {self.model.heb_bias_update.value.lower().capitalize()}")
-    #        self.PARAM_LOG.info(f"Hebbian Focus: {self.model.heb_focus.value.lower().capitalize()}")
-    #        self.PARAM_LOG.info(f"Hebbian Activation: {self.model.heb_act.value.lower().capitalize()}")
-    #        self.PARAM_LOG.info(f"Classification Learning Rule: {self.model.class_learn.value.lower().capitalize()}")
-    #        self.PARAM_LOG.info(f"Classification Weight Growth: {self.model.class_growth.value.lower().capitalize()}")
-    #        self.PARAM_LOG.info(f"Classification Bias Update: {self.model.class_bias_update.value.lower().capitalize()}")
-    #        self.PARAM_LOG.info(f"Classification Focus: {self.model.class_focus.value.lower().capitalize()}")
-    #        self.PARAM_LOG.info(f"Classification Activation: {self.model.class_act.value.lower().capitalize()}")
-    #        self.PARAM_LOG.info(f"Network Learning Rate: {self.model.lr}")
-    #        self.PARAM_LOG.info(f"Sigmoid Constant: {self.model.sig_k}")
-    #        self.PARAM_LOG.info(f"Alpha: {self.model.alpha}")
-    #        self.PARAM_LOG.info(f"Beta: {self.model.beta}")
-    #        self.PARAM_LOG.info(f"Sigma: {self.model.sigma}")
-    #        self.PARAM_LOG.info(f"Mu: {self.model.mu}")
-    #        self.PARAM_LOG.info(f"Param Init: {self.model.init.value.lower().capitalize()}")
-    #        self.PARAM_LOG.info(f"Sub experiment scope list: {self.sub_experiment_scope_list}")
-    #        self.PARAM_LOG.info(f"Start time of experiment: {time.strftime('%Y-%m-%d %Hh:%Mm:%Ss', time.localtime(self.START_TIME))}")
-
-    #        self.EXP_LOG.info("Completed logging of experiment parameters.")
 
     def _param_end_log(self):
         total_train_time = sum(self.sub_experiment_train_timers.values())

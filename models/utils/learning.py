@@ -1,33 +1,8 @@
-import sys
-
 import scipy
 import torch
 
 from models.utils.hyperparams import Inhibition
 from utils.experiment_utils.experiment_constants import Focus, WeightGrowth
-
-
-def update_weight_softhebb(
-    input, preactivation, output, weight, target=None, inhibition=Inhibition.RePU
-):
-    # input_shape = batch, in_dim
-    # output_shape = batch, out_dim = preactivation_shape
-    # weight_shape = out_dim, in_dim
-    b, indim = input.shape
-    b, outdim = output.shape
-    multiplicative_factor = 1
-    W = weight
-    if inhibition == Inhibition.RePU:
-        u = torch.relu(preactivation)
-        multiplicative_factor = multiplicative_factor / (u + 1e-9)
-    elif inhibition == Inhibition.Softmax:
-        u = preactivation
-    # deltas = multiplicative_factor * output * (input - torch.matmul(torch.relu(u), W).reshape(b, indim))
-    deltas = (multiplicative_factor * output).reshape(b, outdim, 1) * (
-        input - torch.matmul(torch.relu(u), W)
-    ).reshape(b, 1, indim)
-    delta = torch.mean(deltas, dim=0)
-    return delta
 
 
 def softhebb_input_difference(x, a, normalized_weights):
@@ -58,8 +33,6 @@ def update_softhebb_w(
     if focus == Focus.NEURON:
         weight_norms = torch.norm(weights, dim=1, keepdim=True)
         normed_weights = weights / (weight_norms + 1e-9)
-        print("Shape of y:", y.shape)
-        sys.stdout.flush()
         batch_dim, out_dim = y.shape
         wn = weight_norms.unsqueeze(0)
         factor = 1 / (wn + 1e-9)
@@ -91,7 +64,6 @@ def update_softhebb_w(
         )  # average the delta weights over the batch dim
     elif focus == Focus.SYNAPSE:
         batch_dim, out_dim = y.shape
-        print("Shape of y:", y.shape)
         w = torch.abs(weights)  # Element-wise absoluate value for |Wij|
         weight_norms = torch.norm(weights, dim=1, keepdim=True)
         wn = weight_norms.unsqueeze(0)  # Keeping this to make return consistent

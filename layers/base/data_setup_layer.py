@@ -177,11 +177,7 @@ class DataSetupLayer(InputLayer):
 
         # Loop through each label in the dataset
         for data, labels in data_loader:
-            print(labels.shape)
-            sys.stdout.flush()  # Manually flush the output buffer
             for data_sample, label in zip(data, labels):
-                print(f"Label value: {label.item()}")
-                sys.stdout.flush()
                 if label.item() in filter.keys():
                     labels_kept.append(filter[int(label.item())])
                     data_kept.append(data_sample)
