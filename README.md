@@ -45,6 +45,9 @@ uv sync
 ## Usage
 
 ### Running Full SNAP Experiments
+```sh
+./run_all_experiments
+```
 
 ## License
 
