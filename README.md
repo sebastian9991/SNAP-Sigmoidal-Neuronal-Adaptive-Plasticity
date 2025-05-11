@@ -1,8 +1,8 @@
 <a id="readme-top"></a>
 
 <div align="center">
-  <h1 style="font-size:3vw;padding:0;margin:0;display:inline">SNAP: Sigmoidal-Neuronal-Adaptive-Plasticity</h3>
-  <h3 style="margin:0">SNAP an approximation to Long-Term Potentiation for ANNs to reduce catastrophic forgetting. </h3>
+  <h1 style="font-size:3vw;padding:0;margin:0;display:inline">SNAP: Sigmoidal-Neuronal-Adaptive-Plasticity</h1>
+  <h3 style="margin:0">SNAP is an approximation to Long-Term Potentiation for ANNs to reduce catastrophic forgetting.</h3>
   <a href="https://arxiv.org/abs/2410.15318"><strong>Read the paper»</strong></a>
 </div>
 
@@ -10,11 +10,18 @@
 
 <div align="center">
 
-<a href="">[![Contributors][contributors-shield]][contributors-url]</a>
-<a href="">[![Issues][issues-shield]][issues-url]</a>
-<a href="">[![MIT License][license-shield]][license-url]</a>
+  <a href="https://github.com/sebastian9991/your-repo/graphs/contributors">
+    <img src="https://img.shields.io/github/contributors/sebastian9991/SNAP-Sigmoidal-Neuronal-Adaptive-Plasticity.svg" alt="Contributors" />
+  </a>
+  <a href="https://github.com/sebastian9991/your-repo/issues">
+    <img src="https://img.shields.io/github/issues/sebastian9991/SNAP-Sigmoidal-Neuronal-Adaptive-Plasticity.svg" alt="Issues" />
+  </a>
+  <a href="https://github.com/sebastian9991/your-repo/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/sebastian9991/SNAP-Sigmoidal-Neuronal-Adaptive-Plasticity.svg" alt="License" />
+  </a>
 
 </div>
+
 
 ## Getting Started
 
