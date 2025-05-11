@@ -46,6 +46,10 @@ uv sync
 
 ### Running Full SNAP Experiments
 
+## License
+
+Distributed under the MIT License. See `LICENSE.txt` for more information.
+
 
 [contributors-shield]: https://img.shields.io/github/contributors/sebastian9991/SNAP-Sigmoidal-Neuronal-Adaptive-Plasticity.svg?style=for-the-badge
 [contributors-url]: https://github.com/sebastian9991/SNAP-Sigmoidal-Neuronal-Adaptive-Plasticity/graphs/contributors
