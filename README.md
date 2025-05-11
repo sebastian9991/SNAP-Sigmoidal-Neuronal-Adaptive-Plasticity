@@ -51,6 +51,21 @@ uv sync
 Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 
+## Citation
+
+```
+@article{xu2024snapstoppingcatastrophicforgetting,
+      title={SNAP: Stopping Catastrophic Forgetting in Hebbian Learning with Sigmoidal Neuronal Adaptive Plasticity}, 
+      author={Tianyi Xu and Patrick Zheng and Shiyan Liu and Sicheng Lyu and Isabeau Prémont-Schwarz},
+      year={2024},
+      eprint={2410.15318},
+      archivePrefix={arXiv},
+      primaryClass={cs.NE},
+      url={https://arxiv.org/abs/2410.15318}, 
+}
+```
+
+
 [contributors-shield]: https://img.shields.io/github/contributors/sebastian9991/SNAP-Sigmoidal-Neuronal-Adaptive-Plasticity.svg?style=for-the-badge
 [contributors-url]: https://github.com/sebastian9991/SNAP-Sigmoidal-Neuronal-Adaptive-Plasticity/graphs/contributors
 [issues-shield]: https://img.shields.io/github/issues/sebastian9991/SNAP-Sigmoidal-Neuronal-Adaptive-Plasticity.svg?style=for-the-badge
