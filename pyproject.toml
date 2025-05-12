@@ -17,4 +17,5 @@ dependencies = [
 [dependency-groups]
 dev = [
     "matplotlib>=3.9.4",
+    "pyqt6>=6.9.0",
 ]
