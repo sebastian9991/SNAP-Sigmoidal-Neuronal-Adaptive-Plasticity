@@ -17,6 +17,7 @@ class SoftHebbLayer(nn.Module):
         self,
         K: float,
         focus: Focus,
+        epsilon: float,
         inputdim: int,
         outputdim: int,
         w_lr: float = 0.003,
@@ -41,6 +42,7 @@ class SoftHebbLayer(nn.Module):
 
         self.K = K
         self.focus = focus
+        self.epsilon = epsilon
         self.triangle: bool = triangle
         self.w_lr: float = w_lr
         self.l_lr: float = l_lr
@@ -63,6 +65,7 @@ class SoftHebbLayer(nn.Module):
         self.weight = nn.Parameter(
             torch.randn((outputdim, inputdim), device=device), requires_grad=False
         )
+        self.weighted_sum = self.weight
         self.logprior = nn.Parameter(
             torch.zeros(outputdim, device=device), requires_grad=False
         )
@@ -78,6 +81,13 @@ class SoftHebbLayer(nn.Module):
 
     def get_weight_norms(self, weights):
         return torch.norm(weights, p=2, dim=1, keepdim=True)
+
+    def get_f_target(self):
+        min_val = self.weighted_sum.min()
+        max_val = self.weighted_sum.max()
+        target = (self.weighted_sum - min_val) / (max_val - min_val + 1e-8)
+        target = target.mean()
+        return max(0.66, target.mean())
 
     def a(self, x):
         # batch_size, dim = x.shape
@@ -127,13 +137,16 @@ class SoftHebbLayer(nn.Module):
 
     def learn_weights(self, inference_output, target=None):
         supervised = self.learningrule == LearningRule.SoftHebbOutputContrastive
-        delta_w, self.wn = L.update_softhebb_w(
+        f_target = self.get_f_target()
+        delta_w, self.K = L.update_softhebb_w(
             self.K,
             self.focus,
             inference_output.y,
             inference_output.xn,
             inference_output.a,
             self.weight,
+            f_target,
+            self.epsilon,
             self.inhibition,
             inference_output.u,
             target=target,
@@ -153,6 +166,7 @@ class SoftHebbLayer(nn.Module):
             supervised=supervised,
         )
         new_weight = self.weight + self.w_lr * delta_w
+        self.weighted_sum += new_weight
         self.weight.data = new_weight
 
         new_bias = self.logprior + self.b_lr * delta_b

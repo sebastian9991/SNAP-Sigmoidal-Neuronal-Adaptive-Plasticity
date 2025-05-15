@@ -140,6 +140,10 @@ def parse_arguments(args_list: Optional[List] = None) -> argparse.Namespace:
         choices=list((WeightGrowth)),
         help="Specifies the weight growth of each softhebb layer.",
     )
+    parser.add_argument(
+        "--epsilon", type=float, default=0.01, help="epsilon for incrementing K."
+    )
+    
 
     # Parse arguments into Namespace
     args: argparse.Namespace = (

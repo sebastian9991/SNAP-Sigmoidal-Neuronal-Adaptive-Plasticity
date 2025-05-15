@@ -3,11 +3,12 @@ from models.utils.hyperparams import LearningRule
 
 
 def MLPBaseline(
-    K, focus, hsize, lamb, w_lr, b_lr, l_lr, nclasses, device, weight_growth
+    K, epsilon, focus, hsize, lamb, w_lr, b_lr, l_lr, nclasses, device, weight_growth
 ):
     mymodel = SoftNeuralNet(device, hsize)
     heb_layer = SoftHebbLayer(
         K=K,
+        epsilon=epsilon,
         focus=focus,
         inputdim=784,
         outputdim=hsize,
@@ -20,10 +21,11 @@ def MLPBaseline(
     )
 
     heb_layer2 = SoftHebbLayer(
-        K,
-        focus,
-        hsize,
-        nclasses,
+        K=K,
+        epsilon=epsilon,
+        focus=focus,
+        inputdim=hsize,
+        outputdim=nclasses,
         w_lr=w_lr,
         b_lr=b_lr,
         l_lr=l_lr,

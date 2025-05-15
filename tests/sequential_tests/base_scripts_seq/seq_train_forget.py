@@ -8,8 +8,6 @@ from models.MLP.baseline_mlp import MLPBaseline
 from utils.experiment_utils.experiment_logger import configure_logger
 from utils.experiment_utils.experiment_parser import *
 
-# Create log
-results_log = configure_logger("Forget Result Log", "./results/results_forget.log")
 
 
 def run_experiment_direct(
@@ -19,6 +17,7 @@ def run_experiment_direct(
 
     model: Network = MLPBaseline(
         params.K,
+        params.epsilon,
         params.focus,
         params.hsize,
         params.lamb,

@@ -309,6 +309,8 @@ class ForgetExperiment(Experiment):
             f"Training of epoch #{epoch} took {time_to_str(total_added_train_time)}."
         )
         self.EXP_LOG.info("Completed '_training' function for forget experiment")
+        total_norm = torch.nn.utils.parameters_to_vector(self.model.parameters()).norm(2).item()
+        self.WEIGHT_LOG.info(f"Model weight L2 norm after epoch #{epoch}: {total_norm:.4f}")
         for layer in self.model.modules():
             # Check if the layer is an instance of SoftHebbLayer
             if hasattr(layer, "plot_wn_distribution") and callable(
