@@ -3,6 +3,17 @@ import torch
 
 from models.utils.hyperparams import Inhibition
 from utils.experiment_utils.experiment_constants import Focus, WeightGrowth
+from utils.experiment_utils.experiment_logger import *
+
+def increment_k(f_target, wn, K, epsilon):
+    f_temp = (wn/K).mean()
+    if f_temp >= f_target:
+        K = K*(1 + epsilon)
+    elif f_temp < f_target:
+        K = K / (1 + epsilon)
+
+    return K
+
 
 
 def softhebb_input_difference(x, a, normalized_weights):
@@ -24,6 +35,8 @@ def update_softhebb_w(
     normed_x,
     a,
     weights,
+    f_target,
+    epsilon,
     inhibition: Inhibition,
     u=None,
     target=None,
@@ -36,6 +49,10 @@ def update_softhebb_w(
         batch_dim, out_dim = y.shape
         wn = weight_norms.unsqueeze(0)
         factor = 1 / (wn + 1e-9)
+        # print("===========START")
+        # print("  pre-gate factor min/max:", factor.min().item(), factor.max().item())
+        # print("  wn range:", wn.min().item(), wn.max().item())
+        K = increment_k(f_target=f_target, wn=wn, K = K, epsilon=epsilon)
         if weight_growth == WeightGrowth.LINEAR:
             factor *= 1
         elif weight_growth == WeightGrowth.SIGMOID:
@@ -56,12 +73,33 @@ def update_softhebb_w(
         else:
             y_part = y.reshape(batch_dim, out_dim, 1)
 
+        # print("AUX INFO:")
+        # print(f"normed_x: {normed_x}")
+        # print(f"normed_weights: {normed_weights}")
+        # print("  a range:", a.min().item(), a.max().item())
+        # print("END AUX INFO.")
         delta_w = (
             factor * y_part * softhebb_input_difference(normed_x, a, normed_weights)
         )
         delta_w = torch.mean(
             delta_w, dim=0
         )  # average the delta weights over the batch dim
+        # print("  post-gate factor min/max:", factor.min().item(), factor.max().item())
+        # right before your existing print…
+        # mn = factor.min()
+        # mx = factor.max()
+        #
+        # # count how many times the min (and max) occur
+        # num_mins = (factor == mn).sum().item()
+        # num_maxs = (factor == mx).sum().item()
+        #
+        # print(
+        #     f"  post-gate factor min={mn.item():.6e} (count={num_mins}), "
+        #     f"max={mx.item():.6e} (count={num_maxs})"
+        # )
+        # print(f"Delta_w: {delta_w}")
+        # print("===========END")
+
     elif focus == Focus.SYNAPSE:
         batch_dim, out_dim = y.shape
         w = torch.abs(weights)  # Element-wise absoluate value for |Wij|
@@ -95,7 +133,7 @@ def update_softhebb_w(
     else:
         raise NotImplementedError(f"Focus paramater {focus} is not valid.")
 
-    return delta_w, wn / K
+    return delta_w, K
 
 
 def update_softhebb_b(y, logprior, target=None, supervised=False):

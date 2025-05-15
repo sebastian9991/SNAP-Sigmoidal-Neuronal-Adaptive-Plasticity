@@ -10,8 +10,6 @@ from utils.experiment_utils.experiment_logger import *
 from utils.experiment_utils.experiment_parser import *
 from utils.experiment_utils.experiment_stats import *
 
-# Create log
-results_log = configure_logger("Forget Result Log", "./results/results_forget.log")
 
 # Get arguments
 ARGS = parse_arguments()

@@ -46,6 +46,7 @@ class Experiment(ABC):
         PARAM_LOG (logging.Logger): parameter log for experiment
         DEBUG_LOG (logging.Logger): debugging
         EXP_LOG (logging.Logger): logging of experiment process
+        WEIGHT_LOG (logging.Logger): logginf of weight norm
     """
 
     def __init__(self, model: Network, args: argparse.Namespace, name: str) -> None:
@@ -136,6 +137,9 @@ class Experiment(ABC):
         self.EXP_LOG: logging.Logger = configure_logger(
             "Experiment Log", f"{self.RESULT_PATH}/experiment_process.log"
         )  # Logs during experiment
+        self.WEIGHT_LOG: logging.Logger = configure_logger(
+            "Weight Log", f"{self.RESULT_PATH}/weight_process.log"
+        )  # Logs for weight norm
 
         self.loggers.append(self.PRINT_LOG)
         self.loggers.append(self.TEST_LOG)
@@ -143,6 +147,7 @@ class Experiment(ABC):
         self.loggers.append(self.PARAM_LOG)
         self.loggers.append(self.DEBUG_LOG)
         self.loggers.append(self.EXP_LOG)
+        self.loggers.append(self.WEIGHT_LOG)
 
         # Logging of experiment
         self.EXP_LOG.info("Completed imports.")
