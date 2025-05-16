@@ -9,7 +9,6 @@ from utils.experiment_utils.experiment_logger import configure_logger
 from utils.experiment_utils.experiment_parser import *
 
 
-
 def run_experiment_direct(
     arg_list: List[str],
 ) -> Tuple[List[List[float]], List[List[float]]]:

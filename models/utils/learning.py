@@ -5,15 +5,15 @@ from models.utils.hyperparams import Inhibition
 from utils.experiment_utils.experiment_constants import Focus, WeightGrowth
 from utils.experiment_utils.experiment_logger import *
 
+
 def increment_k(f_target, wn, K, epsilon):
-    f_temp = (wn/K).mean()
+    f_temp = (wn / K).mean()
     if f_temp >= f_target:
-        K = K*(1 + epsilon)
+        K = K * (1 + epsilon)
     elif f_temp < f_target:
         K = K / (1 + epsilon)
 
     return K
-
 
 
 def softhebb_input_difference(x, a, normalized_weights):
@@ -52,7 +52,7 @@ def update_softhebb_w(
         # print("===========START")
         # print("  pre-gate factor min/max:", factor.min().item(), factor.max().item())
         # print("  wn range:", wn.min().item(), wn.max().item())
-        K = increment_k(f_target=f_target, wn=wn, K = K, epsilon=epsilon)
+        K = increment_k(f_target=f_target, wn=wn, K=K, epsilon=epsilon)
         if weight_growth == WeightGrowth.LINEAR:
             factor *= 1
         elif weight_growth == WeightGrowth.SIGMOID:
