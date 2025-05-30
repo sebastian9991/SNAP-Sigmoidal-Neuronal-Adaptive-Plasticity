@@ -1,17 +1,87 @@
+import numpy as np
 import scipy
 import torch
+from torch import linalg as LA
 
 from models.utils.hyperparams import Inhibition
 from utils.experiment_utils.experiment_constants import Focus, WeightGrowth
 from utils.experiment_utils.experiment_logger import *
 
+"""
+How many weights are less than the factor? |1 - wn/k| 
+"""
 
-def increment_k(f_target, wn, K, epsilon):
-    f_temp = (wn / K).mean()
-    if f_temp >= f_target:
-        K = K * (1 + epsilon)
-    elif f_temp < f_target:
-        K = K / (1 + epsilon)
+
+# def increment_k(f_target, wn, K, epsilon, threshold=0.1):
+#     consolidated_percentage = abs(wn/ K).mean()
+#     if consolidated_percentage >= f_target:
+#         K = K * (1 + epsilon)
+#     elif consolidated_percentage < f_target:
+#         K = K / (1 + epsilon)
+#
+#     return K
+
+
+# def increment_k(f_target, wn, K, epsilon, threshold=0.01):
+#     consolidated_count = sum((abs(1 - wn / K) < threshold).view(-1).to_list())
+#     consolidation_percentage = consolidated_count / wn.numel()
+#     if consolidation_percentage >= f_target:
+#         K = K * (1 + epsilon)
+#     elif consolidation_percentage < f_target:
+#         K = K / (1 + epsilon)
+#
+#     return K
+
+
+# def increment_k(f_target, wn, K, threshold=0.01, delta=0.01):
+#     def compute_consolidation(K_val):
+#         consolidated = (abs(1 - wn / K_val) < threshold).view(-1)
+#         return consolidated.sum().item() / wn.numel()
+#
+#     current_score = compute_consolidation(K)
+#
+#     # Try small perturbations in both directions
+#     up_score = compute_consolidation(K + delta)
+#     down_score = (
+#         compute_consolidation(K - delta) if K - delta > 0 else -1
+#     )  # Avoid negative K
+#
+#     # Move K in the direction that improves consolidation
+#     if up_score > current_score:
+#         K += delta
+#     elif down_score > current_score:
+#         K -= delta
+#     # Else no improvement, keep K
+#
+#     return K
+
+
+def increment_k(wn, K, threshold=0.01, lr=0.01, eps=1e-5):
+    def consolidation(K_val):
+        ratio = wn / K_val
+        mask = (abs(1 - ratio) < threshold).view(-1)
+        return mask.sum().item() / wn.numel()
+
+    # Compute finite difference gradient using backward or central diff
+    if K >= 1.0 - eps:
+        # Near upper boundary use backward difference
+        f0 = consolidation(K)
+        f_minus = consolidation(K - eps)
+        grad = (f0 - f_minus) / eps
+    elif K <= eps:
+        # Near lower boundary use forward difference
+        f0 = consolidation(K)
+        f_plus = consolidation(K + eps)
+        grad = (f_plus - f0) / eps
+    else:
+        # Central difference
+        f_plus = consolidation(K + eps)
+        f_minus = consolidation(K - eps)
+        grad = (f_plus - f_minus) / (2 * eps)
+
+    K = K + lr * grad
+
+    K = min(max(K, eps), 1.0)
 
     return K
 
@@ -52,7 +122,7 @@ def update_softhebb_w(
         # print("===========START")
         # print("  pre-gate factor min/max:", factor.min().item(), factor.max().item())
         # print("  wn range:", wn.min().item(), wn.max().item())
-        K = increment_k(f_target=f_target, wn=wn, K=K, epsilon=epsilon)
+        K = increment_k(f_target=f_target, wn=weight_norms, K=K)
         if weight_growth == WeightGrowth.LINEAR:
             factor *= 1
         elif weight_growth == WeightGrowth.SIGMOID:
