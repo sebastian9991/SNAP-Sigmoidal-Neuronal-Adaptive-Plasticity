@@ -1,6 +1,7 @@
 import os
 from typing import Tuple
 
+import numpy as np
 import torch
 import torch.nn as nn
 from dotwiz import DotWiz
@@ -41,6 +42,7 @@ class SoftHebbLayer(nn.Module):
         self.output_dim: int = outputdim
 
         self.K = K
+        self.step = 0
         self.focus = focus
         self.epsilon = epsilon
         self.triangle: bool = triangle
@@ -82,12 +84,19 @@ class SoftHebbLayer(nn.Module):
     def get_weight_norms(self, weights):
         return torch.norm(weights, p=2, dim=1, keepdim=True)
 
-    def get_f_target(self):
+    def get_f_target_(self):
         min_val = self.weighted_sum.min()
         max_val = self.weighted_sum.max()
         target = (self.weighted_sum - min_val) / (max_val - min_val + 1e-8)
         target = target.mean()
         return max(0.66, target.mean())
+
+    def sigmoid(self, z):
+        return 1 / (1 + np.exp(-z))
+
+    def get_f_target(self, step, time_scale=10, fixed_target=0.66):
+        prob_fixed_target = self.sigmoid(step / time_scale)
+        return prob_fixed_target
 
     def a(self, x):
         # batch_size, dim = x.shape
@@ -137,7 +146,8 @@ class SoftHebbLayer(nn.Module):
 
     def learn_weights(self, inference_output, target=None):
         supervised = self.learningrule == LearningRule.SoftHebbOutputContrastive
-        f_target = self.get_f_target()
+        self.step += 1
+        f_target = self.get_f_target(self.step)
         delta_w, self.K = L.update_softhebb_w(
             self.K,
             self.focus,
