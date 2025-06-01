@@ -31,7 +31,7 @@ def run_experiment_direct(
     experiment: Experiment = ForgetExperiment(
         model,
         params,
-        f"-{params.experiment_name}-{params.experiment_type.lower()}-{params.lr}--{params.heb_learn.lower()}-{params.heb_growth.lower()}-{params.heb_focus.lower()}-{params.heb_inhib.lower()}-{params.heb_lamb}---{params.class_learn.lower()}-{params.class_growth.lower()}-{params.class_focus.lower()}-0",
+        f"-{params.experiment_name}-{params.experiment_type.lower()}-{params.lr}--{params.heb_lamb}---{params.class_learn.lower()}--",
     )
     accuracies = list(experiment.run())
     experiment.cleanup()
