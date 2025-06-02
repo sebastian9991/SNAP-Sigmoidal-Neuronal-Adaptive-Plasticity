@@ -1,89 +1,38 @@
-import numpy as np
 import scipy
 import torch
-from torch import linalg as LA
+import torch.nn.functional as F
 
 from models.utils.hyperparams import Inhibition
 from utils.experiment_utils.experiment_constants import Focus, WeightGrowth
 from utils.experiment_utils.experiment_logger import *
 
-"""
-How many weights are less than the factor? |1 - wn/k| 
-"""
+
+def custom_hinge_plus(x):
+    return torch.clamp(x, min = 0)
 
 
-# def increment_k(f_target, wn, K, epsilon, threshold=0.1):
-#     consolidated_percentage = abs(wn/ K).mean()
-#     if consolidated_percentage >= f_target:
-#         K = K * (1 + epsilon)
-#     elif consolidated_percentage < f_target:
-#         K = K / (1 + epsilon)
-#
-#     return K
+def custom_hinge_minus(x):
+    return -1*torch.clamp(x, max = 0)
 
 
-# def increment_k(f_target, wn, K, epsilon, threshold=0.01):
-#     consolidated_count = sum((abs(1 - wn / K) < threshold).view(-1).to_list())
-#     consolidation_percentage = consolidated_count / wn.numel()
-#     if consolidation_percentage >= f_target:
-#         K = K * (1 + epsilon)
-#     elif consolidation_percentage < f_target:
-#         K = K / (1 + epsilon)
-#
-#     return K
+def update_k(optimizer, K, weights, focus, threshold, p=0.5):
+    optimizer.zero_grad()
 
-
-# def increment_k(f_target, wn, K, threshold=0.01, delta=0.01):
-#     def compute_consolidation(K_val):
-#         consolidated = (abs(1 - wn / K_val) < threshold).view(-1)
-#         return consolidated.sum().item() / wn.numel()
-#
-#     current_score = compute_consolidation(K)
-#
-#     # Try small perturbations in both directions
-#     up_score = compute_consolidation(K + delta)
-#     down_score = (
-#         compute_consolidation(K - delta) if K - delta > 0 else -1
-#     )  # Avoid negative K
-#
-#     # Move K in the direction that improves consolidation
-#     if up_score > current_score:
-#         K += delta
-#     elif down_score > current_score:
-#         K -= delta
-#     # Else no improvement, keep K
-#
-#     return K
-
-
-def increment_k(wn, K, threshold=0.01, lr=0.01, eps=1e-5):
-    def consolidation(K_val):
-        ratio = wn / K_val
-        mask = (abs(1 - ratio) < threshold).view(-1)
-        return mask.sum().item() / wn.numel()
-
-    # Compute finite difference gradient using backward or central diff
-    if K >= 1.0 - eps:
-        # Near upper boundary use backward difference
-        f0 = consolidation(K)
-        f_minus = consolidation(K - eps)
-        grad = (f0 - f_minus) / eps
-    elif K <= eps:
-        # Near lower boundary use forward difference
-        f0 = consolidation(K)
-        f_plus = consolidation(K + eps)
-        grad = (f_plus - f0) / eps
+    if focus == Focus.NEURON:
+        weight_norm = torch.norm(weights, dim=1, keepdim=True)
+    elif focus == Focus.SYNAPSE:
+        weight_norm = torch.abs(weights)
     else:
-        # Central difference
-        f_plus = consolidation(K + eps)
-        f_minus = consolidation(K - eps)
-        grad = (f_plus - f_minus) / (2 * eps)
+        ValueError("Unknown Focus")
 
-    K = K + lr * grad
+    hinge_input = (1 - weight_norm / K) - threshold
+    loss_tensor = p * custom_hinge_plus(hinge_input) + (1 - p) * custom_hinge_minus(
+        hinge_input
+    )
+    loss = loss_tensor.sum()
 
-    K = min(max(K, eps), 1.0)
-
-    return K
+    loss.backward()
+    optimizer.step()
 
 
 def softhebb_input_difference(x, a, normalized_weights):
@@ -105,7 +54,6 @@ def update_softhebb_w(
     normed_x,
     a,
     weights,
-    f_target,
     epsilon,
     inhibition: Inhibition,
     u=None,
@@ -122,7 +70,6 @@ def update_softhebb_w(
         # print("===========START")
         # print("  pre-gate factor min/max:", factor.min().item(), factor.max().item())
         # print("  wn range:", wn.min().item(), wn.max().item())
-        K = increment_k(f_target=f_target, wn=weight_norms, K=K)
         if weight_growth == WeightGrowth.LINEAR:
             factor *= 1
         elif weight_growth == WeightGrowth.SIGMOID:
@@ -143,32 +90,12 @@ def update_softhebb_w(
         else:
             y_part = y.reshape(batch_dim, out_dim, 1)
 
-        # print("AUX INFO:")
-        # print(f"normed_x: {normed_x}")
-        # print(f"normed_weights: {normed_weights}")
-        # print("  a range:", a.min().item(), a.max().item())
-        # print("END AUX INFO.")
         delta_w = (
             factor * y_part * softhebb_input_difference(normed_x, a, normed_weights)
         )
         delta_w = torch.mean(
             delta_w, dim=0
         )  # average the delta weights over the batch dim
-        # print("  post-gate factor min/max:", factor.min().item(), factor.max().item())
-        # right before your existing print…
-        # mn = factor.min()
-        # mx = factor.max()
-        #
-        # # count how many times the min (and max) occur
-        # num_mins = (factor == mn).sum().item()
-        # num_maxs = (factor == mx).sum().item()
-        #
-        # print(
-        #     f"  post-gate factor min={mn.item():.6e} (count={num_mins}), "
-        #     f"max={mx.item():.6e} (count={num_maxs})"
-        # )
-        # print(f"Delta_w: {delta_w}")
-        # print("===========END")
 
     elif focus == Focus.SYNAPSE:
         batch_dim, out_dim = y.shape

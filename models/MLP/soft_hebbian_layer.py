@@ -41,7 +41,10 @@ class SoftHebbLayer(nn.Module):
         self.input_dim: int = inputdim
         self.output_dim: int = outputdim
 
-        self.K = K
+        self.K = torch.nn.Parameter(torch.tensor(K, dtype=torch.float32))
+        self.optimizer_K = torch.optim.Adam(
+            [self.K], lr=0.01
+        )  # Optimizer for backprop on K
         self.step = 0
         self.focus = focus
         self.epsilon = epsilon
@@ -64,16 +67,19 @@ class SoftHebbLayer(nn.Module):
         if preprocessing == InputProcessing.Whiten:
             self.bn = M.BatchNorm(inputdim, device=device)
 
-        self.weight = nn.Parameter(
-            torch.randn((outputdim, inputdim), device=device), requires_grad=False
-        )
-        self.weighted_sum = self.weight
+        if focus == Focus.SYNAPSE:
+            self.weight = nn.Parameter(
+                torch.randn((outputdim, inputdim), device=device) + K / 2,
+                requires_grad=False,
+            )
+        elif focus == Focus.NEURON:
+            self.weight = nn.Parameter(
+                torch.randn((outputdim, inputdim), device=device) + K / 2,
+                requires_grad=False,
+            )
         self.logprior = nn.Parameter(
             torch.zeros(outputdim, device=device), requires_grad=False
         )
-
-        self.initial_weight_norm = initial_weight_norm
-        self.set_weight_norms_to(initial_weight_norm)
 
     def set_weight_norms_to(self, norm: float):
         weights = self.weight
@@ -83,20 +89,6 @@ class SoftHebbLayer(nn.Module):
 
     def get_weight_norms(self, weights):
         return torch.norm(weights, p=2, dim=1, keepdim=True)
-
-    def get_f_target_(self):
-        min_val = self.weighted_sum.min()
-        max_val = self.weighted_sum.max()
-        target = (self.weighted_sum - min_val) / (max_val - min_val + 1e-8)
-        target = target.mean()
-        return max(0.66, target.mean())
-
-    def sigmoid(self, z):
-        return 1 / (1 + np.exp(-z))
-
-    def get_f_target(self, step, time_scale=10, fixed_target=0.66):
-        prob_fixed_target = self.sigmoid(step / time_scale)
-        return prob_fixed_target
 
     def a(self, x):
         # batch_size, dim = x.shape
@@ -146,22 +138,26 @@ class SoftHebbLayer(nn.Module):
 
     def learn_weights(self, inference_output, target=None):
         supervised = self.learningrule == LearningRule.SoftHebbOutputContrastive
-        self.step += 1
-        f_target = self.get_f_target(self.step)
         delta_w, self.K = L.update_softhebb_w(
-            self.K,
-            self.focus,
-            inference_output.y,
-            inference_output.xn,
-            inference_output.a,
-            self.weight,
-            f_target,
-            self.epsilon,
-            self.inhibition,
-            inference_output.u,
+            K=self.K,
+            focus=self.focus,
+            y=inference_output.y,
+            normed_x=inference_output.xn,
+            a=inference_output.a,
+            weights=self.weight,
+            epsilon=self.epsilon,
+            inhibition=self.inhibition,
+            u=inference_output.u,
             target=target,
             supervised=supervised,
             weight_growth=self.weight_growth,
+        )
+        L.update_k(
+            optimizer=self.optimizer_K,
+            K=self.K,
+            weights=self.weight,
+            focus=self.focus,
+            threshold=0.01,
         )
         delta_b = L.update_softhebb_b(
             inference_output.y, self.logprior, target=target, supervised=supervised
@@ -176,7 +172,6 @@ class SoftHebbLayer(nn.Module):
             supervised=supervised,
         )
         new_weight = self.weight + self.w_lr * delta_w
-        self.weighted_sum += new_weight
         self.weight.data = new_weight
 
         new_bias = self.logprior + self.b_lr * delta_b
