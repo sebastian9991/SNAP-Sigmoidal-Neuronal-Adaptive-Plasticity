@@ -177,8 +177,8 @@ class ForgetExperiment(Experiment):
             self.sub_experiment_train_timers[subdirectory_name] = 0
             self.sub_experiment_test_timers[subdirectory_name] = 0
 
-        print(self.sub_experiment_train_timers)
-        print(self.sub_experiment_test_timers)
+        # print(self.sub_experiment_train_timers)
+        # print(self.sub_experiment_test_timers)
 
     """
     Stage 2: Training and evaluation

@@ -139,7 +139,7 @@ class Experiment(ABC):
         )  # Logs during experiment
         self.WEIGHT_LOG: logging.Logger = configure_logger(
             "Weight Log", f"{self.RESULT_PATH}/weight_process.log"
-        )  # Logs for weight norm
+        )  # Logs for weights
 
         self.loggers.append(self.PRINT_LOG)
         self.loggers.append(self.TEST_LOG)
