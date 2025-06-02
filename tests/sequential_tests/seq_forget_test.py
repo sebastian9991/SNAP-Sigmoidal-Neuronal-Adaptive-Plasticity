@@ -1,6 +1,8 @@
 import itertools
 import logging
 
+from tqdm import tqdm
+
 from tests.sequential_tests.base_scripts_seq.seq_train_forget import *
 from utils.experiment_utils.experiment_logger import *
 from utils.utils_root import *
@@ -24,10 +26,11 @@ growth_parameters = ["SIGMOID"]
 
 
 # Sequential execution
-for K in K_values:
-    for epsilon in epsilons:
-        for focus in focuses:
-            for growth in growth_parameters:
+for K in tqdm(K_values, desc = "Hyperparamater: K Values."):
+    for epsilon in tqdm(epsilons, desc = "Hyperparamater: epsilon."):
+        for focus in tqdm(focuses, desc = f"Hyperparamater: focus."):
+            tqdm.write(f"{focus}-wise focus.")
+            for growth in tqdm(growth_parameters, desc = "Hyperparmater: Growth."):
                 for batch_size, hsize in itertools.product(batch_sizes, hidden_sizes):
                     for lmbda, lr in parameter_pairs:
                         exp_name = f"focus:{focus}_K{K}_SOFTHEBB_BATCH{batch_size}_HSIZE{hsize}_{growth.upper()}_{growth.upper()}"
