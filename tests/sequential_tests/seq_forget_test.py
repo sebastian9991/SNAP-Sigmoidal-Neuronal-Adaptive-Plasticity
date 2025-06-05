@@ -1,6 +1,8 @@
 import itertools
 import logging
 
+import traceback
+
 from tqdm import tqdm
 
 from tests.sequential_tests.base_scripts_seq.seq_train_forget import *
@@ -21,7 +23,7 @@ hidden_sizes = [1024]
 parameter_pairs = [(0.5, 0.003)]
 K_values = [1]
 epsilons = [0.01]
-focuses = ["NEURON"] 
+focuses = ["NEURON"]
 growth_parameters = ["SIGMOID"]
 
 
@@ -78,7 +80,8 @@ for K in tqdm(K_values, desc="Hyperparamater: K Values."):
 
                         try:
                             logging.info(f"Running sequential experiment: {exp_name}")
-                            run_experiment_direct(args_list)
+                            run_experiment_direct_iid(args_list)
                             logging.info(f"Completed: {exp_name}")
                         except Exception as e:
                             logging.error(f"Error in {exp_name}: {e}")
+                            print(traceback.format_exc())
