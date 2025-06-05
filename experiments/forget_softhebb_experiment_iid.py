@@ -121,7 +121,7 @@ class ForgetExperimentIID(Experiment):
         self.sub_experiment_train_timers[subdirectory_name] = 0
         self.sub_experiment_test_timers[subdirectory_name] = 0
 
-    def _experiment(self) -> None:
+    def _experiment(self) -> Union[Tuple[List[float], List[float]], None]:
 
         self.keep_training = True
 
@@ -130,21 +130,28 @@ class ForgetExperimentIID(Experiment):
             f"{self.data_name}_{'_iid'}",
         )
 
-        self.testing_test_dataloader_list.append(self.experiments_test_dataloader)
+        training_epoch_lists: List[List[float]] = []
+        testing_epoch_lists: List[List[float]] = []
 
         epoch = 0
         max_epochs = 35
         self.count += 1
         while (self.keep_training) and (epoch <= max_epochs):
 
-            self._training(
+            training_list, testing_list = self._training(
                 self.experiments_train_dataloader,
                 epoch,
                 self.data_name,
                 ExperimentPhases.FORGET,
             )
+            training_epoch_lists.append(training_list)
+            testing_epoch_lists.append(testing_list)
 
             epoch = epoch + 1
+        
+        average_training = [torch.mean(torch.stack(group)) for group in list(zip(*training_epoch_lists))]
+        average_testing = [torch.mean(torch.stack(group)) for group in list(zip(*testing_epoch_lists))]
+        return average_training, average_testing
 
     def _training(
         self,
@@ -153,7 +160,7 @@ class ForgetExperimentIID(Experiment):
         dname: str,
         phase: ExperimentPhases,
         visualize: bool = False,
-    ) -> None:
+    ) -> Union[Tuple[List[float], List[float]], None]:
 
         experiment_name = self.curr_folder_path.split("/")[-1]
 
@@ -166,6 +173,8 @@ class ForgetExperimentIID(Experiment):
         )
 
         need_test: bool = True
+        training_accuracies = []
+        testing_accuracies = []
 
         for inputs, labels in train_data_loader:
 
@@ -175,29 +184,31 @@ class ForgetExperimentIID(Experiment):
                     train_pause_time - train_start
                 )
 
-                self._testing(
-                    train_data_loader,
-                    Purposes.TRAIN_ACCURACY,
-                    epoch,
-                    self.data_name,
-                    ExperimentPhases.FORGET,
+                training_accuracies.append(
+                    self._testing(
+                        train_data_loader,
+                        Purposes.TRAIN_ACCURACY,
+                        epoch,
+                        self.data_name,
+                        ExperimentPhases.FORGET,
+                    )
                 )
 
-                for curr_test_dataloader in self.testing_test_dataloader_list:
-
+                testing_accuracies.append(
                     self._testing(
-                        curr_test_dataloader,
+                        self.experiments_test_dataloader,
                         Purposes.TEST_ACCURACY,
                         epoch,
                         self.data_name,
                         ExperimentPhases.FORGET,
                     )
+                )
 
                 need_test = False
 
                 train_start = time.time()
 
-                if self.keep_training:
+                if not self.keep_training:
                     break
 
             inputs, labels = (
@@ -225,6 +236,7 @@ class ForgetExperimentIID(Experiment):
         self.WEIGHT_LOG.info(
             f"Model weight L2 norm after epoch #{epoch}: {total_norm:.4f}"
         )
+        return training_accuracies, testing_accuracies
 
     def _testing(
         self,
@@ -253,11 +265,10 @@ class ForgetExperimentIID(Experiment):
 
         final_accuracy: float = 0
 
+        correct_test_count: int = 0
+
+        total_test_count: int = len(test_data_loader)
         with torch.no_grad():
-
-            correct_test_count: int = 0
-
-            total_test_count: int = len(test_data_loader)
 
             for inputs, labels in test_data_loader:
 
@@ -307,6 +318,7 @@ class ForgetExperimentIID(Experiment):
 
     def _final_test(self) -> None:
         return None
+
     def _final_test_log(self, results) -> None:
         return None
 

@@ -30,7 +30,7 @@ def run_experiment_direct(
     experiment: Experiment = ForgetExperiment(
         model,
         params,
-        f"-{params.experiment_name}-{params.experiment_type.lower()}-{params.lr}--{params.heb_lamb}---{params.class_learn.lower()}--",
+        f"-{params.experiment_name}-{params.experiment_type.lower()}-{params.lr}--",
     )
     accuracies = list(experiment.run())
     experiment.cleanup()
@@ -62,7 +62,7 @@ def run_experiment_direct_iid(
     experiment: Experiment = ForgetExperimentIID(
         model,
         params,
-        f"-{params.experiment_name}-{params.experiment_type.lower()}-{params.lr}--{params.heb_lamb}---{params.class_learn.lower()}--",
+        f"-{params.experiment_name}-{params.experiment_type.lower()}-{params.lr}--",
     )
     accuracies = list(experiment.run())
     experiment.cleanup()

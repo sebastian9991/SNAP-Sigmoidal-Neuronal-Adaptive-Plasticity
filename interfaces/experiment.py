@@ -164,7 +164,7 @@ class Experiment(ABC):
         dname: str,
         phase: ExperimentPhases,
         visualize: bool = True,
-    ) -> None:
+    ) -> Union[Tuple[List[float], List[float]], None]:
         raise NotImplementedError("This method was not implemented.")
 
     def _testing(
@@ -194,7 +194,7 @@ class Experiment(ABC):
     def _param_end_log(self) -> None:
         raise NotImplementedError("The method has not been implemented yet.")
 
-    def _experiment(self) -> None:
+    def _experiment(self) -> Union[Tuple[List[float], List[float]], None]:
         raise NotImplementedError("The method has not been implemented yet.")
 
     def _experiment_log(self) -> None:

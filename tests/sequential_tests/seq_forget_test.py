@@ -24,7 +24,7 @@ parameter_pairs = [(0.5, 0.003)]
 K_values = [1]
 epsilons = [0.01]
 focuses = ["NEURON"]
-growth_parameters = ["SIGMOID"]
+growth_parameters = ["LINEAR"]
 
 
 # Sequential execution
