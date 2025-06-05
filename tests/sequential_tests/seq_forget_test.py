@@ -21,16 +21,16 @@ hidden_sizes = [1024]
 parameter_pairs = [(0.5, 0.003)]
 K_values = [1]
 epsilons = [0.01]
-focuses = ["NEURON"]
+focuses = ["NEURON"] 
 growth_parameters = ["SIGMOID"]
 
 
 # Sequential execution
-for K in tqdm(K_values, desc = "Hyperparamater: K Values."):
-    for epsilon in tqdm(epsilons, desc = "Hyperparamater: epsilon."):
-        for focus in tqdm(focuses, desc = f"Hyperparamater: focus."):
+for K in tqdm(K_values, desc="Hyperparamater: K Values."):
+    for epsilon in tqdm(epsilons, desc="Hyperparamater: epsilon."):
+        for focus in tqdm(focuses, desc=f"Hyperparamater: focus."):
             tqdm.write(f"{focus}-wise focus.")
-            for growth in tqdm(growth_parameters, desc = "Hyperparmater: Growth."):
+            for growth in tqdm(growth_parameters, desc="Hyperparmater: Growth."):
                 for batch_size, hsize in itertools.product(batch_sizes, hidden_sizes):
                     for lmbda, lr in parameter_pairs:
                         exp_name = f"focus:{focus}_K{K}_SOFTHEBB_BATCH{batch_size}_HSIZE{hsize}_{growth.upper()}_{growth.upper()}"

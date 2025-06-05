@@ -76,16 +76,15 @@ class ForgetExperiment(Experiment):
 
         # Subexperiment scope list set up
         # Convert the string argument to a list of lists
-        print(args.sub_experiment_scope_list)
         self.sub_experiment_scope_list = ast.literal_eval(
             args.sub_experiment_scope_list
         )
 
         # Dataloader setup
-        self.sub_experiemnts_train_dataloader_list: list[DataLoader] = (
+        self.sub_experiments_train_dataloader_list: list[DataLoader] = (
             self._setup_dataloaders(self.train_data_set, self.sub_experiment_scope_list)
         )
-        self.sub_experiemnts_test_dataloader_list: list[DataLoader] = (
+        self.sub_experiments_test_dataloader_list: list[DataLoader] = (
             self._setup_dataloaders(self.test_data_set, self.sub_experiment_scope_list)
         )
 
@@ -157,7 +156,7 @@ class ForgetExperiment(Experiment):
     def _setup_test_dataloader_dictionary(self) -> None:
 
         for label_value_list, curr_test_dataloader in zip(
-            self.sub_experiment_scope_list, self.sub_experiemnts_test_dataloader_list
+            self.sub_experiment_scope_list, self.sub_experiments_test_dataloader_list
         ):
 
             subdirectory_name = (
@@ -193,10 +192,10 @@ class ForgetExperiment(Experiment):
             self.SUB_EXP_SAMPLES = 0
 
             curr_train_dataloader: DataLoader = (
-                self.sub_experiemnts_train_dataloader_list[step]
+                self.sub_experiments_train_dataloader_list[step]
             )
             curr_test_dataloader: DataLoader = (
-                self.sub_experiemnts_test_dataloader_list[step]
+                self.sub_experiments_test_dataloader_list[step]
             )
             self.curr_folder_path: str = os.path.join(
                 self.RESULT_PATH,
@@ -423,10 +422,10 @@ class ForgetExperiment(Experiment):
         for step in range(len(self.sub_experiment_scope_list)):
 
             curr_train_dataloader: DataLoader = (
-                self.sub_experiemnts_train_dataloader_list[step]
+                self.sub_experiments_train_dataloader_list[step]
             )
             curr_test_dataloader: DataLoader = (
-                self.sub_experiemnts_test_dataloader_list[step]
+                self.sub_experiments_test_dataloader_list[step]
             )
             self.curr_folder_path: str = os.path.join(
                 self.RESULT_PATH,
