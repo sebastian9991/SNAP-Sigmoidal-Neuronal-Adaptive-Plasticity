@@ -200,7 +200,7 @@ class Experiment(ABC):
     def _experiment_log(self) -> None:
         raise NotImplementedError("The method has not been implemented yet.")
 
-    def _final_test(self) -> Tuple[float, ...]:
+    def _final_test(self) -> Union[Tuple[float, ...], None]:
         raise NotImplementedError("The method has not been implemented yet.")
 
     def _final_test_log(self, results) -> None:
