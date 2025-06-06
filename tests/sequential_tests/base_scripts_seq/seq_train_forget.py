@@ -2,6 +2,7 @@ from typing import List, Tuple
 
 from experiments.forget_softhebb_experiment import ForgetExperiment
 from experiments.forget_softhebb_experiment_iid import ForgetExperimentIID
+from experiments.base_softhebb_experiment import BaseSoftExperiment
 from interfaces.experiment import Experiment
 from interfaces.network import Network
 from models.MLP.baseline_mlp import MLPBaseline
@@ -59,12 +60,12 @@ def run_experiment_direct_iid(
         params.weight_growth,
     )
 
-    experiment: Experiment = ForgetExperimentIID(
+    experiment: Experiment = BaseSoftExperiment(
         model,
         params,
         f"-{params.experiment_name}-{params.experiment_type.lower()}-{params.lr}--",
     )
-    accuracies = list(experiment.run())
+    final, results = experiment.run()
     experiment.cleanup()
 
-    return None
+    return results

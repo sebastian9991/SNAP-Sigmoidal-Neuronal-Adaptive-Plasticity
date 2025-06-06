@@ -8,11 +8,11 @@ from utils.experiment_utils.experiment_logger import *
 
 
 def custom_hinge_plus(x):
-    return torch.clamp(x, min = 0)
+    return torch.clamp(x, min=0)
 
 
 def custom_hinge_minus(x):
-    return -1*torch.clamp(x, max = 0)
+    return -1 * torch.clamp(x, max=0)
 
 
 def update_k(optimizer, K, weights, focus, threshold, p=0.5):
@@ -30,6 +30,7 @@ def update_k(optimizer, K, weights, focus, threshold, p=0.5):
         hinge_input
     )
     loss = loss_tensor.sum()
+    
 
     loss.backward()
     optimizer.step()

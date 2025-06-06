@@ -4,7 +4,7 @@ import os
 import shutil
 import time
 from abc import ABC
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union, Any
 
 # Pytorch imports
 from torch.utils.data import DataLoader
@@ -206,7 +206,7 @@ class Experiment(ABC):
     def _final_test_log(self, results) -> None:
         raise NotImplementedError("The method has not been implemented yet.")
 
-    def run(self) -> Tuple[float, ...]:
+    def run(self) -> Tuple[Any, ...]:
         """
         METHOD
         Runs the experiment
@@ -220,7 +220,7 @@ class Experiment(ABC):
         self._param_start_log()
 
         # Training and Testing
-        self._experiment()
+        result_acc = self._experiment()
         results = self._final_test()
 
         # Logging final parameters of experiment
@@ -230,7 +230,7 @@ class Experiment(ABC):
         self._end_log()
         self._param_end_log()
 
-        return results
+        return results, result_acc
 
     def cleanup(self) -> None:
         """
