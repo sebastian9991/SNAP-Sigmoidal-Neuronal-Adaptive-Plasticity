@@ -42,7 +42,7 @@ def run_experiment_direct(
 
 def run_experiment_direct_iid(
     arg_list: List[str],
-) -> Tuple[List[float], List[float]]:
+) -> Tuple[Tuple[List[float], List[float]], str]:
     params = parse_arguments(arg_list)
 
     model: Network = MLPBaseline(
@@ -67,4 +67,4 @@ def run_experiment_direct_iid(
     final, results = experiment.run()
     experiment.cleanup()
 
-    return results
+    return results, params.experiment_name

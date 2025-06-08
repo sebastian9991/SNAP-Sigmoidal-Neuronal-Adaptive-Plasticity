@@ -20,7 +20,7 @@ project_root = get_project_root(levels_up=1)
 # Experiment parameters
 batch_sizes = [16]
 hidden_sizes = [1024]
-parameter_pairs = [(0.5, 0.003)]
+parameter_pairs = [(0.5, 0.0005)]
 K_values = [1]
 epsilons = [0.01]
 focuses = ["NEURON"]
@@ -35,7 +35,7 @@ for K in tqdm(K_values, desc="Hyperparamater: K Values."):
             for growth in tqdm(growth_parameters, desc="Hyperparmater: Growth."):
                 for batch_size, hsize in itertools.product(batch_sizes, hidden_sizes):
                     for lmbda, lr in parameter_pairs:
-                        exp_name = f"focus:{focus}_K{K}_SOFTHEBB_BATCH{batch_size}_HSIZE{hsize}_{growth.upper()}_{growth.upper()}"
+                        exp_name = f"focus:{focus} || K{K} || SOFTHEBB_BATCH{batch_size} || HSIZE{hsize} || {growth.upper()}"
                         args_list = [
                             "--data_name=MNIST",
                             f"--experiment_name={exp_name}",
@@ -63,12 +63,12 @@ for K in tqdm(K_values, desc="Hyperparamater: K Values."):
                             "--sigma=1",
                             "--mu=0",
                             f"--w_lr={lr}",
-                            "--l_lr=0.003",
-                            "--b_lr=0.003",
+                            "--l_lr=0.001",
+                            "--b_lr=0.001",
                             "--init=uniform",
                             f"--hsize={hsize}",
                             f"--batch_size={batch_size}",
-                            "--epochs=3",
+                            "--epochs=500",
                             f"--device={'cuda'}",
                             "--local_machine=True",
                             "--experiment_type=forget",
@@ -81,8 +81,8 @@ for K in tqdm(K_values, desc="Hyperparamater: K Values."):
 
                         try:
                             logging.info(f"Running sequential experiment: {exp_name}")
-                            results_acc = run_experiment_direct_iid(args_list)
-                            plot_acc(results_acc[1])
+                            results_acc, exp_name = run_experiment_direct_iid(args_list)
+                            plot_acc(results_acc[1], exp_name)
                             logging.info(f"Completed: {exp_name}")
                         except Exception as e:
                             logging.error(f"Error in {exp_name}: {e}")

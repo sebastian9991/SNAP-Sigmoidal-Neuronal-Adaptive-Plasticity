@@ -22,12 +22,13 @@ from utils.experiment_utils.experiment_logger import *
 from utils.experiment_utils.experiment_parser import *
 from utils.experiment_utils.experiment_timer import *
 
-def set_global_seed(seed: int = 42):
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
+
+# def set_global_seed(seed: int = 42):
+#     torch.manual_seed(seed)
+#     if torch.cuda.is_available():
+#         torch.cuda.manual_seed_all(seed)
+#     torch.backends.cudnn.deterministic = True
+#     torch.backends.cudnn.benchmark = False
 
 
 class ForgetExperiment(Experiment):
@@ -45,7 +46,7 @@ class ForgetExperiment(Experiment):
         """
         super().__init__(model, args, name)
 
-        set_global_seed(args.seed)
+        # set_global_seed(args.seed)
 
         dataset_mapping = {member.name.upper(): member for member in DataSets}
         self.dataset = dataset_mapping[self.data_name.upper()]
@@ -315,8 +316,12 @@ class ForgetExperiment(Experiment):
             f"Training of epoch #{epoch} took {time_to_str(total_added_train_time)}."
         )
         self.EXP_LOG.info("Completed '_training' function for forget experiment")
-        total_norm = torch.nn.utils.parameters_to_vector(self.model.parameters()).norm(2).item()
-        self.WEIGHT_LOG.info(f"Model weight L2 norm after epoch #{epoch}: {total_norm:.4f}")
+        total_norm = (
+            torch.nn.utils.parameters_to_vector(self.model.parameters()).norm(2).item()
+        )
+        self.WEIGHT_LOG.info(
+            f"Model weight L2 norm after epoch #{epoch}: {total_norm:.4f}"
+        )
         for layer in self.model.modules():
             # Check if the layer is an instance of SoftHebbLayer
             if hasattr(layer, "plot_wn_distribution") and callable(
