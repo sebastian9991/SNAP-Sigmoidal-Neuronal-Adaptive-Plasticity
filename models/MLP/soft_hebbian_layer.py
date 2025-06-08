@@ -1,7 +1,6 @@
 import os
 from typing import Tuple
 
-import numpy as np
 import torch
 import torch.nn as nn
 from dotwiz import DotWiz
@@ -77,6 +76,7 @@ class SoftHebbLayer(nn.Module):
                 torch.randn((outputdim, inputdim), device=device) + K / 2,
                 requires_grad=False,
             )
+            self.set_weight_norms_to(initial_weight_norm)
         self.logprior = nn.Parameter(
             torch.zeros(outputdim, device=device), requires_grad=False
         )

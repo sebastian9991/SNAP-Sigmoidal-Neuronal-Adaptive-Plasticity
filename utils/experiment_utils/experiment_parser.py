@@ -136,6 +136,9 @@ def parse_arguments(args_list: Optional[List] = None) -> argparse.Namespace:
         "--epsilon", type=float, default=0.01, help="epsilon for incrementing K."
     )
 
+    # Seed arguments
+    parser.add_argument("--seed", type=int, default=42)
+
     # Parse arguments into Namespace
     args: argparse.Namespace = (
         parser.parse_args() if args_list == None else parser.parse_args(args_list)

@@ -22,6 +22,13 @@ from utils.experiment_utils.experiment_logger import *
 from utils.experiment_utils.experiment_parser import *
 from utils.experiment_utils.experiment_timer import *
 
+def set_global_seed(seed: int = 42):
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
 
 class ForgetExperiment(Experiment):
     """Stage 1: Experiement set-up."""
@@ -37,6 +44,8 @@ class ForgetExperiment(Experiment):
             None
         """
         super().__init__(model, args, name)
+
+        set_global_seed(args.seed)
 
         dataset_mapping = {member.name.upper(): member for member in DataSets}
         self.dataset = dataset_mapping[self.data_name.upper()]

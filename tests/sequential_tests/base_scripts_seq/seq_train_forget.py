@@ -1,7 +1,6 @@
 from typing import List, Tuple
 
 from experiments.forget_softhebb_experiment import ForgetExperiment
-from experiments.forget_softhebb_experiment_iid import ForgetExperimentIID
 from experiments.base_softhebb_experiment import BaseSoftExperiment
 from interfaces.experiment import Experiment
 from interfaces.network import Network

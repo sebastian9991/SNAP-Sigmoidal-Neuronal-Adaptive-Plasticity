@@ -1,6 +1,5 @@
 import itertools
 import logging
-
 import traceback
 
 from tqdm import tqdm
@@ -68,7 +67,7 @@ for K in tqdm(K_values, desc="Hyperparamater: K Values."):
                             "--init=uniform",
                             f"--hsize={hsize}",
                             f"--batch_size={batch_size}",
-                            "--epochs=10",
+                            "--epochs=100",
                             f"--device={'cuda'}",
                             "--local_machine=True",
                             "--experiment_type=forget",
@@ -76,6 +75,7 @@ for K in tqdm(K_values, desc="Hyperparamater: K Values."):
                             f"--focus={focus}",
                             f"--weight_growth={growth}",
                             f"--epsilon={epsilon}",
+                            "--seed=42",
                         ]
 
                         try:
