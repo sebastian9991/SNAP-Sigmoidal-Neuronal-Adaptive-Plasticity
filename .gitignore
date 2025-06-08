@@ -3,6 +3,7 @@
 
 #Our results folder
 results/
+plots/
 
 
 # Byte-compiled / optimized / DLL files
