@@ -8,6 +8,7 @@ dependencies = [
     "dotwiz>=0.4.0",
     "numpy>=2.0.2",
     "pandas>=2.2.3",
+    "pathlib>=1.0.1",
     "scipy>=1.13.1",
     "torch>=2.7.0",
     "torchaudio>=2.7.0",
@@ -19,4 +20,5 @@ dependencies = [
 dev = [
     "matplotlib>=3.9.4",
     "pyqt6>=6.9.0",
+    "pyside6>=6.9.1",
 ]

@@ -1,7 +1,7 @@
 from typing import List, Tuple
 
-from experiments.forget_softhebb_experiment import ForgetExperiment
 from experiments.base_softhebb_experiment import BaseSoftExperiment
+from experiments.forget_softhebb_experiment import ForgetExperiment
 from interfaces.experiment import Experiment
 from interfaces.network import Network
 from models.MLP.baseline_mlp import MLPBaseline
@@ -42,7 +42,7 @@ def run_experiment_direct(
 
 def run_experiment_direct_iid(
     arg_list: List[str],
-) -> None:
+) -> Tuple[List[float], List[float]]:
     params = parse_arguments(arg_list)
 
     model: Network = MLPBaseline(

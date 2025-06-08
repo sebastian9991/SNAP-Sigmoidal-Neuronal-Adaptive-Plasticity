@@ -17,6 +17,7 @@ from utils.experiment_utils.experiment_logger import *
 from utils.experiment_utils.experiment_parser import *
 from utils.experiment_utils.experiment_timer import *
 
+
 def set_global_seed(seed: int = 42):
     torch.manual_seed(seed)
     if torch.cuda.is_available():
@@ -172,6 +173,7 @@ class BaseSoftExperiment(Experiment):
                     self.data_name,
                     ExperimentPhases.BASE,
                 )
+
                 self._testing(
                     self.train_data_loader,
                     Purposes.TRAIN_ACCURACY,
@@ -366,30 +368,37 @@ class BaseSoftExperiment(Experiment):
     ################################################################################################
     # Running Experiment
     ################################################################################################
-    def _experiment(self) -> None:
+    def _experiment(self) -> Tuple[List[float], List[float]]:
         torch.device(self.device)
 
         self.EXP_LOG.info("Started training and testing loops.")
+        training_acc = []
+        testing_acc = []
 
-        for epoch in tqdm(range(0, self.epochs), desc = "Epochs."):
+        for epoch in tqdm(range(0, self.epochs), desc="Epochs"):
             self._training(
                 self.train_data_loader, epoch, self.data_name, ExperimentPhases.BASE
             )
-            self._testing(
-                self.test_data_loader,
-                Purposes.TEST_ACCURACY,
-                self.data_name,
-                ExperimentPhases.BASE,
+            testing_acc.append(
+                self._testing(
+                    self.test_data_loader,
+                    Purposes.TEST_ACCURACY,
+                    self.data_name,
+                    ExperimentPhases.BASE,
+                )
             )
-            self._testing(
-                self.train_data_loader,
-                Purposes.TRAIN_ACCURACY,
-                self.data_name,
-                ExperimentPhases.BASE,
+            training_acc.append(
+                self._testing(
+                    self.train_data_loader,
+                    Purposes.TRAIN_ACCURACY,
+                    self.data_name,
+                    ExperimentPhases.BASE,
+                )
             )
 
         self.EXP_LOG.info("Completed training of model.")
         self.EXP_LOG.info("Visualize weights of model after training.")
+        return training_acc, testing_acc
 
     def _final_test(self) -> Tuple[float, ...]:
         test_acc: float = self._testing(

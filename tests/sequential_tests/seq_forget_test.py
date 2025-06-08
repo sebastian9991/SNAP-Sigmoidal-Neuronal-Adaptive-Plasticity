@@ -6,6 +6,7 @@ from tqdm import tqdm
 
 from tests.sequential_tests.base_scripts_seq.seq_train_forget import *
 from utils.experiment_utils.experiment_logger import *
+from utils.plotting.plot_accuracy_list import *
 from utils.utils_root import *
 from utils.utils_root import get_project_root
 
@@ -67,7 +68,7 @@ for K in tqdm(K_values, desc="Hyperparamater: K Values."):
                             "--init=uniform",
                             f"--hsize={hsize}",
                             f"--batch_size={batch_size}",
-                            "--epochs=100",
+                            "--epochs=3",
                             f"--device={'cuda'}",
                             "--local_machine=True",
                             "--experiment_type=forget",
@@ -80,7 +81,8 @@ for K in tqdm(K_values, desc="Hyperparamater: K Values."):
 
                         try:
                             logging.info(f"Running sequential experiment: {exp_name}")
-                            run_experiment_direct_iid(args_list)
+                            results_acc = run_experiment_direct_iid(args_list)
+                            plot_acc(results_acc[1])
                             logging.info(f"Completed: {exp_name}")
                         except Exception as e:
                             logging.error(f"Error in {exp_name}: {e}")
