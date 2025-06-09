@@ -29,8 +29,7 @@ def update_k(optimizer, K, weights, focus, threshold, p=0.5):
     loss_tensor = p * custom_hinge_plus(hinge_input) + (1 - p) * custom_hinge_minus(
         hinge_input
     )
-    loss = loss_tensor.sum()
-    
+    loss = loss_tensor.mean()
 
     loss.backward()
     optimizer.step()
