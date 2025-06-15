@@ -4,7 +4,7 @@ import os
 import shutil
 import time
 from abc import ABC
-from typing import List, Optional, Tuple, Union, Any
+from typing import Any, List, Optional, Tuple, Union
 
 # Pytorch imports
 from torch.utils.data import DataLoader
@@ -46,7 +46,8 @@ class Experiment(ABC):
         PARAM_LOG (logging.Logger): parameter log for experiment
         DEBUG_LOG (logging.Logger): debugging
         EXP_LOG (logging.Logger): logging of experiment process
-        WEIGHT_LOG (logging.Logger): logginf of weight norm
+        WEIGHT_LOG (logging.Logger): logging of weight norm
+        LAMBDA_LOG (logging.Logger): logging of lambda
     """
 
     def __init__(self, model: Network, args: argparse.Namespace, name: str) -> None:
@@ -140,6 +141,9 @@ class Experiment(ABC):
         self.WEIGHT_LOG: logging.Logger = configure_logger(
             "Weight Log", f"{self.RESULT_PATH}/weight_process.log"
         )  # Logs for weights
+        self.LAMBDA_LOG: logging.Logger = configure_logger(
+            "Lambda Log", f"{self.RESULT_PATH}/lambda_process.log"
+        )  # Logs for weights
 
         self.loggers.append(self.PRINT_LOG)
         self.loggers.append(self.TEST_LOG)
@@ -148,6 +152,7 @@ class Experiment(ABC):
         self.loggers.append(self.DEBUG_LOG)
         self.loggers.append(self.EXP_LOG)
         self.loggers.append(self.WEIGHT_LOG)
+        self.loggers.append(self.LAMBDA_LOG)
 
         # Logging of experiment
         self.EXP_LOG.info("Completed imports.")
@@ -156,6 +161,8 @@ class Experiment(ABC):
         self.EXP_LOG.info(
             f"Experiment '{self.EXP_NAME}' result folder created successfully."
         )
+        self.WEIGHT_LOG.info("Intialize weight-log.")
+        self.LAMBDA_LOG.info("Initalize lambda-log.")
 
     def _training(
         self,

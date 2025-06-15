@@ -24,7 +24,7 @@ parameter_pairs = [(0.5, 0.0005)]
 K_values = [1]
 epsilons = [0.01]
 focuses = ["NEURON"]
-growth_parameters = ["LINEAR"]
+growth_parameters = ["SIGMOID"]
 
 
 # Sequential execution
@@ -82,7 +82,7 @@ for K in tqdm(K_values, desc="Hyperparamater: K Values."):
                         try:
                             logging.info(f"Running sequential experiment: {exp_name}")
                             results_acc, exp_name = run_experiment_direct_iid(args_list)
-                            plot_acc(results_acc[1], exp_name)
+                            plot_acc(results_acc[1], exp_name, "Accuracy")
                             logging.info(f"Completed: {exp_name}")
                         except Exception as e:
                             logging.error(f"Error in {exp_name}: {e}")

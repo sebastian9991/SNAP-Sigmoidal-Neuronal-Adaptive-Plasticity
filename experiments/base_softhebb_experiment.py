@@ -16,6 +16,7 @@ from utils.experiment_utils.experiment_constants import (DataSets,
 from utils.experiment_utils.experiment_logger import *
 from utils.experiment_utils.experiment_parser import *
 from utils.experiment_utils.experiment_timer import *
+from utils.plotting.plot_accuracy_list import *
 
 # def set_global_seed(seed: int = 42):
 #     torch.manual_seed(seed)
@@ -126,6 +127,9 @@ class BaseSoftExperiment(Experiment):
         self.EXP_LOG.info("Completed setup for testing dataset and dataloader.")
 
         self.DEBUG_LOG.info(f"DEVICE USED: {self.device}")
+        ##Debugging:
+        self.weight_list = []
+        self.lambda_over_epochs = {name: [] for name in self.model.layers.keys()}
 
     def _base_train(
         self,
@@ -203,7 +207,19 @@ class BaseSoftExperiment(Experiment):
         self.EXP_LOG.info(
             f"Training of epoch #{epoch} took {time_to_str(training_time)}."
         )
+        total_norm = (
+            torch.nn.utils.parameters_to_vector(self.model.parameters()).norm(2).item()
+        )
+        self.weight_list.append(total_norm)
+        self.WEIGHT_LOG.info(
+            f"Model weight L2 norm after epoch #{epoch}: {total_norm:.4f}"
+        )
         self.EXP_LOG.info("Completed 'base_train' function.")
+        for name, layer in self.model.layers.items():
+            self.lambda_over_epochs[name].append(layer.lamb.item())
+            self.LAMBDA_LOG.info(
+                f"Model lambda after epoch #{epoch}: {layer.lamb.item()}"
+            )
 
     def _base_test(
         self,
@@ -397,6 +413,8 @@ class BaseSoftExperiment(Experiment):
 
         self.EXP_LOG.info("Completed training of model.")
         self.EXP_LOG.info("Visualize weights of model after training.")
+        plot_acc(self.weight_list, "Weight norm over epochs.", "weight_norm")
+        plot_acc(self.lambda_over_epochs['SoftHebbian1'], "Lambda over epochs.", "lambda")
         return training_acc, testing_acc
 
     def _final_test(self) -> Tuple[float, ...]:
