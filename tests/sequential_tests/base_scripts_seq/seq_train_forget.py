@@ -64,7 +64,7 @@ def run_experiment_direct_iid(
         params,
         f"-{params.experiment_name}-{params.experiment_type.lower()}-{params.lr}--",
     )
-    final, results = experiment.run()
+    final, tuple_results = experiment.run()
     experiment.cleanup()
 
-    return results, params.experiment_name
+    return tuple_results, params.experiment_name

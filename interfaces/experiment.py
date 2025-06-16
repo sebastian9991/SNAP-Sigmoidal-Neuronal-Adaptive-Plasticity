@@ -201,7 +201,7 @@ class Experiment(ABC):
     def _param_end_log(self) -> None:
         raise NotImplementedError("The method has not been implemented yet.")
 
-    def _experiment(self) -> Union[Tuple[List[float], List[float]], None]:
+    def _experiment(self) -> Union[Tuple[List[float], List[float], List[float], List[float]], None]:
         raise NotImplementedError("The method has not been implemented yet.")
 
     def _experiment_log(self) -> None:
@@ -227,7 +227,7 @@ class Experiment(ABC):
         self._param_start_log()
 
         # Training and Testing
-        result_acc = self._experiment()
+        four_tuple = self._experiment()
         results = self._final_test()
 
         # Logging final parameters of experiment
@@ -237,7 +237,7 @@ class Experiment(ABC):
         self._end_log()
         self._param_end_log()
 
-        return results, result_acc
+        return results, four_tuple
 
     def cleanup(self) -> None:
         """

@@ -383,7 +383,7 @@ class BaseSoftExperiment(Experiment):
     ################################################################################################
     # Running Experiment
     ################################################################################################
-    def _experiment(self) -> Tuple[List[float], List[float]]:
+    def _experiment(self) -> Tuple[List[float], List[float], List[float], List[float]]:
         torch.device(self.device)
 
         self.EXP_LOG.info("Started training and testing loops.")
@@ -415,7 +415,7 @@ class BaseSoftExperiment(Experiment):
         self.EXP_LOG.info("Visualize weights of model after training.")
         plot_acc(self.weight_list, "Weight norm over epochs.", "weight_norm")
         plot_acc(self.lambda_over_epochs['SoftHebbian1'], "Lambda over epochs.", "lambda")
-        return training_acc, testing_acc
+        return training_acc, testing_acc, self.weight_list, self.lambda_over_epochs['SoftHebbian1']
 
     def _final_test(self) -> Tuple[float, ...]:
         test_acc: float = self._testing(
