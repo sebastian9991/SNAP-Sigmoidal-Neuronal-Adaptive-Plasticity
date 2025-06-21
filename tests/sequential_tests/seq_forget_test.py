@@ -24,7 +24,7 @@ parameter_pairs = [(0.5, 0.0005)]
 K_values = [1]
 epsilons = [0.01]
 focuses = ["NEURON"]
-growth_parameters = ["SIGMOID"]
+growth_parameters = ["LINEAR"]
 
 seeds = [734892, 158207, 945610, 382915, 601384, 294761, 860137, 473029, 117538, 509362]
 
@@ -35,7 +35,7 @@ lambda_list = []
 
 
 # Sequential execution
-for seed in tqdm(seeds, desc = "Seed"):
+for seed in tqdm(seeds, desc="Seed"):
     for K in tqdm(K_values, desc="Hyperparamater: K Values."):
         for epsilon in tqdm(epsilons, desc="Hyperparamater: epsilon."):
             for focus in tqdm(focuses, desc=f"Hyperparamater: focus."):
@@ -45,7 +45,7 @@ for seed in tqdm(seeds, desc = "Seed"):
                         batch_sizes, hidden_sizes
                     ):
                         for lmbda, lr in parameter_pairs:
-                            exp_name = f"focus:{focus} || K{K} || SOFTHEBB_BATCH{batch_size} || HSIZE{hsize} || {growth.upper()}"
+                            exp_name = f"SEED: {seed} || focus:{focus} || K{K} || SOFTHEBB_BATCH{batch_size} || HSIZE{hsize} || {growth.upper()}"
                             args_list = [
                                 "--data_name=MNIST",
                                 f"--experiment_name={exp_name}",

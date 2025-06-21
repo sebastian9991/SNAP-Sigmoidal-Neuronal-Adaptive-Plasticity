@@ -16,7 +16,9 @@ from utils.experiment_utils.experiment_constants import (DataSets,
 from utils.experiment_utils.experiment_logger import *
 from utils.experiment_utils.experiment_parser import *
 from utils.experiment_utils.experiment_timer import *
+from utils.path.path import get_root_dir
 from utils.plotting.plot_accuracy_list import *
+from utils.plotting.plot_weights import plot_weight_heatmap
 
 # def set_global_seed(seed: int = 42):
 #     torch.manual_seed(seed)
@@ -385,6 +387,8 @@ class BaseSoftExperiment(Experiment):
     ################################################################################################
     def _experiment(self) -> Tuple[List[float], List[float], List[float], List[float]]:
         torch.device(self.device)
+        root_dir = get_root_dir()
+        weight_matrix_save_path = f"{root_dir}/plots/weight_matrix/{self.EXP_NAME}"
 
         self.EXP_LOG.info("Started training and testing loops.")
         training_acc = []
@@ -394,6 +398,13 @@ class BaseSoftExperiment(Experiment):
             self._training(
                 self.train_data_loader, epoch, self.data_name, ExperimentPhases.BASE
             )
+
+            if (epoch + 1) % 100 == 0:
+                for name, layer in self.model.layers.items():
+                    if hasattr(layer, "weight"):
+                        save_dir = os.path.join(weight_matrix_save_path, name)
+                        plot_weight_heatmap(layer.weight, name, epoch + 1, save_dir)
+
             testing_acc.append(
                 self._testing(
                     self.test_data_loader,
@@ -413,9 +424,12 @@ class BaseSoftExperiment(Experiment):
 
         self.EXP_LOG.info("Completed training of model.")
         self.EXP_LOG.info("Visualize weights of model after training.")
-        plot_acc(self.weight_list, "Weight norm over epochs.", "weight_norm")
-        plot_acc(self.lambda_over_epochs['SoftHebbian1'], "Lambda over epochs.", "lambda")
-        return training_acc, testing_acc, self.weight_list, self.lambda_over_epochs['SoftHebbian1']
+        return (
+            training_acc,
+            testing_acc,
+            self.weight_list,
+            self.lambda_over_epochs["SoftHebbian1"],
+        )
 
     def _final_test(self) -> Tuple[float, ...]:
         test_acc: float = self._testing(
