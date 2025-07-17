@@ -20,13 +20,14 @@ project_root = get_project_root(levels_up=1)
 # Experiment parameters
 batch_sizes = [16]
 hidden_sizes = [1024]
-parameter_pairs = [(0.5, 0.0005)]
+parameter_pairs = [(0.5, 0.01)]
 K_values = [1]
-epsilons = [0.01]
+epsilons = [0.00001]
 focuses = ["NEURON"]
 growth_parameters = ["LINEAR"]
 
 seeds = [734892, 158207, 945610, 382915, 601384, 294761, 860137, 473029, 117538, 509362]
+#seeds = [734892]
 
 training_list = []
 testing_list = []
@@ -73,8 +74,8 @@ for seed in tqdm(seeds, desc="Seed"):
                                 "--sigma=1",
                                 "--mu=0",
                                 f"--w_lr={lr}",
-                                "--l_lr=0.001",
-                                "--b_lr=0.001",
+                                "--l_lr=0.01",
+                                "--b_lr=0.01",
                                 "--init=uniform",
                                 f"--hsize={hsize}",
                                 f"--batch_size={batch_size}",

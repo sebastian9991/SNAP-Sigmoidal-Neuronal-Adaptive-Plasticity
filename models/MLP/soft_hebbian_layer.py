@@ -39,7 +39,7 @@ class SoftHebbLayer(nn.Module):
 
         self.K = torch.nn.Parameter(torch.tensor(K, dtype=torch.float32))
         self.optimizer_K = torch.optim.Adam(
-            [self.K], lr=0.01
+            [self.K], lr=0.001
         )  # Optimizer for backprop on K
         self.step = 0
         self.focus = focus
@@ -48,6 +48,7 @@ class SoftHebbLayer(nn.Module):
         self.w_lr: float = w_lr
         self.l_lr: float = l_lr
         self.b_lr: float = b_lr
+        self.decay_rate: float = 1e-2
         self.lamb = nn.Parameter(
             torch.tensor(initial_lambda, device=device), requires_grad=False
         )
@@ -73,7 +74,7 @@ class SoftHebbLayer(nn.Module):
                 torch.randn((outputdim, inputdim), device=device) + K / 2,
                 requires_grad=False,
             )
-            self.set_weight_norms_to(initial_weight_norm)
+            self.set_weight_norms_to(0.001)
         self.logprior = nn.Parameter(
             torch.zeros(outputdim, device=device), requires_grad=False
         )
@@ -113,7 +114,9 @@ class SoftHebbLayer(nn.Module):
 
     def y(self, a):
         if self.inhibition == Inhibition.Softmax:
-            y = torch.softmax(self.lamb * a + self.logprior)
+            logits = self.lamb*a + self.logprior
+            logits = logits - logits.max(dim = 1, keepdim=True).values
+            y = torch.softmax(logits, dim=1)
         elif self.inhibition == Inhibition.RePU:
             u = self.u(a)
             un = u / (torch.max(u) + 1e-9)  # normalize for numerical stability
@@ -176,8 +179,10 @@ class SoftHebbLayer(nn.Module):
         norm_cste = torch.log(torch.exp(new_bias).sum())
         self.logprior.data = new_bias - norm_cste
 
+        #TODO: Clamp for intermediate layer only
         new_lambda = self.lamb + self.l_lr * delta_l
-        self.lamb.data = new_lambda
+        self.lamb.data = torch.clamp(new_lambda, max=100.0)
+        self.step += 1
 
     def forward(self, x, target=None):
         inference_output = self.inference(x)

@@ -1,6 +1,11 @@
+import math
+import os
 import time
 from typing import Tuple, Type, Union
 
+import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as plt
+import numpy as np
 import torch
 from torch.nn.functional import one_hot
 from torch.utils.data import DataLoader, TensorDataset
@@ -18,7 +23,7 @@ from utils.experiment_utils.experiment_parser import *
 from utils.experiment_utils.experiment_timer import *
 from utils.path.path import get_root_dir
 from utils.plotting.plot_accuracy_list import *
-from utils.plotting.plot_weights import plot_weight_heatmap
+from utils.plotting.plot_weights import plot_weight_grid, plot_weight_heatmap
 
 # def set_global_seed(seed: int = 42):
 #     torch.manual_seed(seed)
@@ -27,6 +32,679 @@ from utils.plotting.plot_weights import plot_weight_heatmap
 #     torch.backends.cudnn.deterministic = True
 #     torch.backends.cudnn.benchmark = False
 
+def plot_misclassified_examples_activations_logits(
+    model, data_loader, device, epoch, save_dir, max_samples=10
+):
+    model.eval()
+    misclassified = []
+
+    with torch.no_grad():
+        for inputs, labels in data_loader:
+            inputs, labels = inputs.to(device), labels.to(device)
+
+            # Get raw activations (a) and predictions
+            inference_out = model.layers["SoftHebbian1"].inference(inputs)
+            a = inference_out.a
+            lamb = model.layers["SoftHebbian1"].lamb
+            logprior = model.layers["SoftHebbian1"].logprior.to(inputs.device)
+
+            logits = (lamb * a + logprior)
+
+            y_pred = model.layers["SoftHebbian2"](inference_out.y)
+            pred_labels = y_pred.argmax(dim=1)
+
+            for i in range(inputs.size(0)):
+                if pred_labels[i] != labels[i]:
+                    misclassified.append(
+                        (
+                            inputs[i].cpu(),
+                            pred_labels[i].item(),
+                            labels[i].item(),
+                            a[i].cpu(),         # cosine similarity
+                            logits[i].cpu(),    # logits for softmax
+                        )
+                    )
+                if len(misclassified) >= max_samples:
+                    break
+            if len(misclassified) >= max_samples:
+                break
+
+    # Prepare save paths
+    img_save_dir = os.path.join(save_dir, "images")
+    act_save_dir = os.path.join(save_dir, "activations")
+    os.makedirs(img_save_dir, exist_ok=True)
+    os.makedirs(act_save_dir, exist_ok=True)
+
+    # --- Plot 1: Input images with labels ---
+    fig1, axs1 = plt.subplots(1, max_samples, figsize=(2 * max_samples, 2.5))
+    axs1 = axs1.flatten()
+
+    for i, (x, y_pred, y_true, _, _) in enumerate(misclassified):
+        x_img = x.view(28, 28) if x.numel() == 784 else x.squeeze()
+        axs1[i].imshow(x_img, cmap="gray")
+        axs1[i].set_title(f"{y_pred} / {y_true}", fontsize=9)
+        axs1[i].axis("off")
+
+    plt.tight_layout()
+    plt.savefig(f"{img_save_dir}/epoch_{epoch}_misclassified_inputs.png", dpi=150)
+    plt.close(fig1)
+
+    # --- Plot 2: Cosine similarity activations (a) ---
+    fig2, axs2 = plt.subplots(1, max_samples, figsize=(2.5 * max_samples, 2.5))
+    axs2 = axs2.flatten()
+
+    for i, (_, _, _, a_val, _) in enumerate(misclassified):
+        a_np = a_val.numpy()
+        h_len = len(a_np)
+        side = int(math.sqrt(h_len))
+
+        if side * side != h_len:
+            padded = np.zeros((side + 1) ** 2)
+            padded[:h_len] = a_np
+            a_np = padded
+            side += 1
+
+        grid = a_np.reshape(side, side)
+        norm_grid = (grid - grid.min()) / (grid.max() - grid.min() + 1e-9)
+
+        im = axs2[i].imshow(norm_grid, cmap="viridis")
+        axs2[i].set_title(f"Sample {i+1}", fontsize=7)
+        axs2[i].axis("off")
+
+        cbar = fig2.colorbar(im, ax=axs2[i], fraction=0.046, pad=0.04)
+        cbar.ax.tick_params(labelsize=5)
+
+    plt.tight_layout()
+    plt.savefig(f"{act_save_dir}/epoch_{epoch}_activations_cosine_a.png", dpi=200)
+    plt.close(fig2)
+
+    # --- Plot 3: Logits heatmaps ---
+    fig3, axs3 = plt.subplots(1, max_samples, figsize=(2.5 * max_samples, 2.5))
+    axs3 = axs3.flatten()
+
+    for i, (_, _, _, _, logits_val) in enumerate(misclassified):
+        logit_np = logits_val.numpy()
+        h_len = len(logit_np)
+        side = int(math.sqrt(h_len))
+
+        if side * side != h_len:
+            padded = np.zeros((side + 1) ** 2)
+            padded[:h_len] = logit_np
+            logit_np = padded
+            side += 1
+
+        grid = logit_np.reshape(side, side)
+        norm_grid = (grid - grid.min()) / (grid.max() - grid.min() + 1e-9)
+
+        im = axs3[i].imshow(norm_grid, cmap="plasma")
+        axs3[i].set_title(f"Sample {i+1}", fontsize=7)
+        axs3[i].axis("off")
+
+        cbar = fig3.colorbar(im, ax=axs3[i], fraction=0.046, pad=0.04)
+        cbar.ax.tick_params(labelsize=5)
+
+    plt.tight_layout()
+    plt.savefig(f"{act_save_dir}/epoch_{epoch}_logits_heatmaps.png", dpi=200)
+    plt.close(fig3)
+
+    # --- Optional: Add mean logit and activation maps later if useful ---
+
+
+
+def plot_misclassified_examples_activations(
+    model, data_loader, device, epoch, save_dir, max_samples=10
+):
+    model.eval()
+    misclassified = []
+
+    with torch.no_grad():
+        for inputs, labels in data_loader:
+            inputs, labels = inputs.to(device), labels.to(device)
+
+            # Get raw activations (a) and predictions
+            inference_out = model.layers["SoftHebbian1"].inference(inputs)
+            a = inference_out.a.cpu()  # raw cosine similarity activations
+            y_pred = model.layers["SoftHebbian2"](inference_out.y)  # still use y
+            pred_labels = y_pred.argmax(dim=1)
+
+            for i in range(inputs.size(0)):
+                if pred_labels[i] != labels[i]:
+                    misclassified.append(
+                        (
+                            inputs[i].cpu(),
+                            pred_labels[i].item(),
+                            labels[i].item(),
+                            a[i],  # now storing cosine similarity a[i], not y[i]
+                        )
+                    )
+                if len(misclassified) >= max_samples:
+                    break
+            if len(misclassified) >= max_samples:
+                break
+
+    # Prepare save paths
+    img_save_dir = os.path.join(save_dir, "images")
+    act_save_dir = os.path.join(save_dir, "activations")
+    os.makedirs(img_save_dir, exist_ok=True)
+    os.makedirs(act_save_dir, exist_ok=True)
+
+    # --- Plot 1: Input images with labels ---
+    fig1, axs1 = plt.subplots(1, max_samples, figsize=(2 * max_samples, 2.5))
+    axs1 = axs1.flatten()
+
+    for i, (x, y_pred, y_true, _) in enumerate(misclassified):
+        x_img = x.view(28, 28) if x.numel() == 784 else x.squeeze()
+        axs1[i].imshow(x_img, cmap="gray")
+        axs1[i].set_title(f"{y_pred} / {y_true}", fontsize=9)
+        axs1[i].axis("off")
+
+    plt.tight_layout()
+    plt.savefig(f"{img_save_dir}/epoch_{epoch}_misclassified_inputs.png", dpi=150)
+    plt.close(fig1)
+
+    # --- Plot 2: Individual activation heatmaps + average, each with a colorbar ---
+    fig2, axs2 = plt.subplots(
+        1, max_samples + 1, figsize=(2.5 * (max_samples + 1), 2.5)
+    )
+    axs2 = axs2.flatten()
+
+    all_h = []
+
+    for i, (_, _, _, h_val) in enumerate(misclassified):
+        h_np = h_val.numpy()
+        all_h.append(h_np)
+
+        h_len = len(h_np)
+        side = int(math.sqrt(h_len))
+
+        if side * side == h_len:
+            grid = h_np.reshape(side, side)
+        else:
+            new_len = (side + 1) ** 2
+            padded = np.zeros(new_len)
+            padded[:h_len] = h_np
+            grid = padded.reshape(side + 1, side + 1)
+
+        norm_grid = (grid - grid.min()) / (grid.max() - grid.min() + 1e-9)
+
+        im = axs2[i].imshow(norm_grid, cmap="viridis")
+        axs2[i].axis("off")
+        axs2[i].set_title(f"Sample {i+1}", fontsize=7)
+
+        cbar = fig2.colorbar(im, ax=axs2[i], fraction=0.046, pad=0.04)
+        cbar.ax.tick_params(labelsize=5)
+
+    # --- Add mean activation plot ---
+    all_h_np = np.stack(all_h)  # [num_samples, h_dim]
+    avg_h = np.mean(all_h_np, axis=0)
+
+    h_len = len(avg_h)
+    side = int(math.sqrt(h_len))
+
+    if side * side == h_len:
+        grid_avg = avg_h.reshape(side, side)
+    else:
+        new_len = (side + 1) ** 2
+        padded = np.zeros(new_len)
+        padded[:h_len] = avg_h
+        grid_avg = padded.reshape(side + 1, side + 1)
+
+    norm_avg = (grid_avg - grid_avg.min()) / (grid_avg.max() - grid_avg.min() + 1e-9)
+    im_avg = axs2[-1].imshow(norm_avg, cmap="viridis")
+    axs2[-1].axis("off")
+    axs2[-1].set_title("Mean", fontsize=8)
+
+    cbar = fig2.colorbar(im_avg, ax=axs2[-1], fraction=0.046, pad=0.04)
+    cbar.ax.tick_params(labelsize=5)
+
+    plt.tight_layout()
+    plt.savefig(
+        f"{act_save_dir}/epoch_{epoch}_activations_grid_avg_colorbars.png", dpi=200
+    )
+    plt.close(fig2)
+
+    # --- Plot 3: Side-by-side input vs activation image for each misclassified sample ---
+    fig3, axs3 = plt.subplots(max_samples, 2, figsize=(4, 2.5 * max_samples))
+
+    for i, (x, _, _, h_val) in enumerate(misclassified):
+        x_img = x.view(28, 28).numpy()
+        h_np = h_val.numpy()
+        h_len = len(h_np)
+        side = int(math.sqrt(h_len))
+        if side * side == h_len:
+            h_img = h_np.reshape(side, side)
+        else:
+            new_len = (side + 1) ** 2
+            padded = np.zeros(new_len)
+            padded[:h_len] = h_np
+            h_img = padded.reshape(side + 1, side + 1)
+
+        norm_h_img = (h_img - h_img.min()) / (h_img.max() - h_img.min() + 1e-9)
+
+        axs3[i, 0].imshow(x_img, cmap="gray")
+        axs3[i, 0].set_title("Input", fontsize=8)
+        axs3[i, 0].axis("off")
+
+        im = axs3[i, 1].imshow(norm_h_img, cmap="viridis")
+        axs3[i, 1].set_title("Cosine Similarity a", fontsize=8)
+        axs3[i, 1].axis("off")
+
+        cbar = fig3.colorbar(im, ax=axs3[i, 1], fraction=0.046, pad=0.04)
+        cbar.ax.tick_params(labelsize=5)
+
+    plt.tight_layout()
+    plt.savefig(f"{act_save_dir}/epoch_{epoch}_x_vs_h_reshaped.png", dpi=200)
+    plt.close(fig3)
+
+
+
+def plot_misclassified_examples_original(
+    model, data_loader, device, epoch, save_dir, max_samples=10
+):
+
+    model.eval()
+    misclassified = []
+
+    with torch.no_grad():
+        for inputs, labels in data_loader:
+            inputs, labels = inputs.to(device), labels.to(device)
+
+            # Get activations and predictions
+            h = model.layers["SoftHebbian1"](inputs)
+            y_pred = model.layers["SoftHebbian2"](h)
+            pred_labels = y_pred.argmax(dim=1)
+
+            for i in range(inputs.size(0)):
+                if pred_labels[i] != labels[i]:
+                    misclassified.append(
+                        (
+                            inputs[i].cpu(),
+                            pred_labels[i].item(),
+                            labels[i].item(),
+                            h[i].cpu(),
+                        )
+                    )
+                if len(misclassified) >= max_samples:
+                    break
+            if len(misclassified) >= max_samples:
+                break
+
+    # Prepare save paths
+    img_save_dir = os.path.join(save_dir, "images")
+    act_save_dir = os.path.join(save_dir, "activations")
+    os.makedirs(img_save_dir, exist_ok=True)
+    os.makedirs(act_save_dir, exist_ok=True)
+
+    # --- Plot 1: Input images with labels ---
+    fig1, axs1 = plt.subplots(1, max_samples, figsize=(2 * max_samples, 2.5))
+    axs1 = axs1.flatten()
+
+    for i, (x, y_pred, y_true, _) in enumerate(misclassified):
+        x_img = x.view(28, 28) if x.numel() == 784 else x.squeeze()
+        axs1[i].imshow(x_img, cmap="gray")
+        axs1[i].set_title(f"{y_pred} / {y_true}", fontsize=9)
+        axs1[i].axis("off")
+
+    plt.tight_layout()
+    plt.savefig(f"{img_save_dir}/epoch_{epoch}_misclassified_inputs.png", dpi=150)
+    plt.close(fig1)
+
+    # --- Plot 2: Individual activation heatmaps + average, each with a colorbar ---
+    fig2, axs2 = plt.subplots(
+        1, max_samples + 1, figsize=(2.5 * (max_samples + 1), 2.5)
+    )
+    axs2 = axs2.flatten()
+
+    all_h = []
+
+    for i, (_, _, _, h_val) in enumerate(misclassified):
+        h_np = h_val.numpy()
+        all_h.append(h_np)
+
+        h_len = len(h_np)
+        side = int(math.sqrt(h_len))
+
+        if side * side == h_len:
+            grid = h_np.reshape(side, side)
+        else:
+            new_len = (side + 1) ** 2
+            padded = np.zeros(new_len)
+            padded[:h_len] = h_np
+            grid = padded.reshape(side + 1, side + 1)
+
+        norm_grid = (grid - grid.min()) / (grid.max() - grid.min() + 1e-9)
+
+        im = axs2[i].imshow(norm_grid, cmap="viridis")
+        axs2[i].axis("off")
+        axs2[i].set_title(f"Sample {i+1}", fontsize=7)
+
+        # Add individual colorbar
+        cbar = fig2.colorbar(im, ax=axs2[i], fraction=0.046, pad=0.04)
+        cbar.ax.tick_params(labelsize=5)
+
+    # --- Add mean activation plot ---
+    all_h_np = np.stack(all_h)  # [num_samples, h_dim]
+    avg_h = np.mean(all_h_np, axis=0)
+
+    h_len = len(avg_h)
+    side = int(math.sqrt(h_len))
+
+    if side * side == h_len:
+        grid_avg = avg_h.reshape(side, side)
+    else:
+        new_len = (side + 1) ** 2
+        padded = np.zeros(new_len)
+        padded[:h_len] = avg_h
+        grid_avg = padded.reshape(side + 1, side + 1)
+
+    norm_avg = (grid_avg - grid_avg.min()) / (grid_avg.max() - grid_avg.min() + 1e-9)
+    im_avg = axs2[-1].imshow(norm_avg, cmap="viridis")
+    axs2[-1].axis("off")
+    axs2[-1].set_title("Mean", fontsize=8)
+
+    # Add colorbar to mean subplot
+    cbar = fig2.colorbar(im_avg, ax=axs2[-1], fraction=0.046, pad=0.04)
+    cbar.ax.tick_params(labelsize=5)
+
+    plt.tight_layout()
+    plt.savefig(
+        f"{act_save_dir}/epoch_{epoch}_activations_grid_avg_colorbars.png", dpi=200
+    )
+    plt.close(fig2)
+
+    # --- Plot 3: Side-by-side input vs activation image for each misclassified sample ---
+    fig3, axs3 = plt.subplots(max_samples, 2, figsize=(4, 2.5 * max_samples))
+
+    for i, (x, _, _, h_val) in enumerate(misclassified):
+        # Prepare input image
+        x_img = x.view(28, 28).numpy()
+
+        # Prepare activation image
+        h_np = h_val.numpy()
+        h_len = len(h_np)
+        side = int(math.sqrt(h_len))
+        if side * side == h_len:
+            h_img = h_np.reshape(side, side)
+        else:
+            new_len = (side + 1) ** 2
+            padded = np.zeros(new_len)
+            padded[:h_len] = h_np
+            h_img = padded.reshape(side + 1, side + 1)
+
+        norm_h_img = (h_img - h_img.min()) / (h_img.max() - h_img.min() + 1e-9)
+
+        # Plot input
+        axs3[i, 0].imshow(x_img, cmap="gray")
+        axs3[i, 0].set_title("Input", fontsize=8)
+        axs3[i, 0].axis("off")
+
+        # Plot reshaped activation
+        im = axs3[i, 1].imshow(norm_h_img, cmap="viridis")
+        axs3[i, 1].set_title("Reshaped h", fontsize=8)
+        axs3[i, 1].axis("off")
+
+        # Add colorbar for each reshaped activation
+        cbar = fig3.colorbar(im, ax=axs3[i, 1], fraction=0.046, pad=0.04)
+        cbar.ax.tick_params(labelsize=5)
+
+    plt.tight_layout()
+    plt.savefig(f"{act_save_dir}/epoch_{epoch}_x_vs_h_reshaped.png", dpi=200)
+    plt.close(fig3)
+
+
+
+def plot_misclassified_examples_debugger(
+    model, data_loader, device, epoch, save_dir, max_samples=10
+):
+
+    model.eval()
+    misclassified = []
+
+    with torch.no_grad():
+        for inputs, labels in data_loader:
+            inputs, labels = inputs.to(device), labels.to(device)
+
+            print(f"\n[Epoch {epoch}] Debug Info")
+            print(f"  inputs.shape: {inputs.shape}")
+            print(f"  inputs.min(): {inputs.min().item():.4f}")
+            print(f"  inputs.max(): {inputs.max().item():.4f}")
+            print(f"  inputs.mean(): {inputs.mean().item():.4f}")
+
+            # --- Inference out ---
+            layer1 = model.layers.get("SoftHebbian1", None)
+            inference_out = layer1.inference(inputs)
+            a = inference_out.a
+            y = inference_out.y
+
+            lamb = getattr(layer1, "lamb", None)
+            logprior = getattr(layer1, "logprior", None)
+            lamb_device = lamb.device if isinstance(lamb, torch.Tensor) else inputs.device
+            if logprior is not None:
+                logits = lamb * a + logprior.to(lamb_device)
+            else:
+                logits = torch.Tensor([-1])
+
+            # --- Predictions ---
+            y_pred = model.layers["SoftHebbian2"](y)
+            pred_labels = y_pred.argmax(dim=1)
+
+            # --- a stats (cosine similarity) ---
+            print(f"  a.shape: {a.shape}")
+            print(f"  a.min(): {a.min().item():.4f}")
+            print(f"  a.max(): {a.max().item():.4f}")
+            print(f"  a.mean(): {a.mean().item():.4f}")
+
+            # --- logits stats ---
+            print(f"  logits.shape: {logits.shape}")
+            print(f"  logits.min(): {logits.min().item():.4f}")
+            print(f"  logits.max(): {logits.max().item():.4f}")
+            print(f"  logits.mean(): {logits.mean().item():.4f}")
+
+            # --- Output y_pred stats ---
+            print(f"  y_pred.shape: {y_pred.shape}")
+            print(f"  y_pred.min(): {y_pred.min().item():.4f}")
+            print(f"  y_pred.max(): {y_pred.max().item():.4f}")
+            print(f"  y_pred.mean(): {y_pred.mean().item():.4f}")
+            print(f"  pred_labels: {pred_labels.tolist()}")
+            print(f"  true_labels: {labels.tolist()}")
+
+            # --- lamb and logprior ---
+            if isinstance(lamb, torch.Tensor):
+                print(f"  lamb: {lamb.item():.4f}")
+            if isinstance(logprior, torch.Tensor):
+                print(f"  logprior.shape: {logprior.shape}")
+                print(f"  logprior.min(): {logprior.min().item():.4f}")
+                print(f"  logprior.max(): {logprior.max().item():.4f}")
+                print(f"  logprior.mean(): {logprior.mean().item():.4f}")
+
+            for i in range(inputs.size(0)):
+                if pred_labels[i] != labels[i]:
+                    misclassified.append(
+                        (
+                            inputs[i].cpu(),
+                            pred_labels[i].item(),
+                            labels[i].item(),
+                            y[i].cpu(),  # NOTE: still using h = y here
+                        )
+                    )
+                if len(misclassified) >= max_samples:
+                    break
+            if len(misclassified) >= max_samples:
+                break    # Prepare save paths
+    img_save_dir = os.path.join(save_dir, "images")
+    act_save_dir = os.path.join(save_dir, "activations")
+    os.makedirs(img_save_dir, exist_ok=True)
+    os.makedirs(act_save_dir, exist_ok=True)
+
+    # --- Plot 1: Input images with labels ---
+    fig1, axs1 = plt.subplots(1, max_samples, figsize=(2 * max_samples, 2.5))
+    axs1 = axs1.flatten()
+
+    for i, (x, y_pred, y_true, _) in enumerate(misclassified):
+        x_img = x.view(28, 28) if x.numel() == 784 else x.squeeze()
+        axs1[i].imshow(x_img, cmap="gray")
+        axs1[i].set_title(f"{y_pred} / {y_true}", fontsize=9)
+        axs1[i].axis("off")
+
+    plt.tight_layout()
+    plt.savefig(f"{img_save_dir}/epoch_{epoch}_misclassified_inputs.png", dpi=150)
+    plt.close(fig1)
+
+    # --- Plot 2: Individual activation heatmaps + average, each with a colorbar ---
+    fig2, axs2 = plt.subplots(
+        1, max_samples + 1, figsize=(2.5 * (max_samples + 1), 2.5)
+    )
+    axs2 = axs2.flatten()
+
+    all_h = []
+
+    for i, (_, _, _, h_val) in enumerate(misclassified):
+        h_np = h_val.numpy()
+        all_h.append(h_np)
+
+        h_len = len(h_np)
+        side = int(math.sqrt(h_len))
+
+        if side * side == h_len:
+            grid = h_np.reshape(side, side)
+        else:
+            new_len = (side + 1) ** 2
+            padded = np.zeros(new_len)
+            padded[:h_len] = h_np
+            grid = padded.reshape(side + 1, side + 1)
+
+        norm_grid = (grid - grid.min()) / (grid.max() - grid.min() + 1e-9)
+
+        im = axs2[i].imshow(norm_grid, cmap="viridis")
+        axs2[i].axis("off")
+        axs2[i].set_title(f"Sample {i+1}", fontsize=7)
+
+        # Add individual colorbar
+        cbar = fig2.colorbar(im, ax=axs2[i], fraction=0.046, pad=0.04)
+        cbar.ax.tick_params(labelsize=5)
+
+    # --- Add mean activation plot ---
+    all_h_np = np.stack(all_h)  # [num_samples, h_dim]
+    avg_h = np.mean(all_h_np, axis=0)
+
+    h_len = len(avg_h)
+    side = int(math.sqrt(h_len))
+
+    if side * side == h_len:
+        grid_avg = avg_h.reshape(side, side)
+    else:
+        new_len = (side + 1) ** 2
+        padded = np.zeros(new_len)
+        padded[:h_len] = avg_h
+        grid_avg = padded.reshape(side + 1, side + 1)
+
+    norm_avg = (grid_avg - grid_avg.min()) / (grid_avg.max() - grid_avg.min() + 1e-9)
+    im_avg = axs2[-1].imshow(norm_avg, cmap="viridis")
+    axs2[-1].axis("off")
+    axs2[-1].set_title("Mean", fontsize=8)
+
+    # Add colorbar to mean subplot
+    cbar = fig2.colorbar(im_avg, ax=axs2[-1], fraction=0.046, pad=0.04)
+    cbar.ax.tick_params(labelsize=5)
+
+    plt.tight_layout()
+    plt.savefig(
+        f"{act_save_dir}/epoch_{epoch}_activations_grid_avg_colorbars.png", dpi=200
+    )
+    plt.close(fig2)
+
+    # --- Plot 3: Side-by-side input vs activation image for each misclassified sample ---
+    fig3, axs3 = plt.subplots(max_samples, 2, figsize=(4, 2.5 * max_samples))
+
+    for i, (x, _, _, h_val) in enumerate(misclassified):
+        # Prepare input image
+        x_img = x.view(28, 28).numpy()
+
+        # Prepare activation image
+        h_np = h_val.numpy()
+        h_len = len(h_np)
+        side = int(math.sqrt(h_len))
+        if side * side == h_len:
+            h_img = h_np.reshape(side, side)
+        else:
+            new_len = (side + 1) ** 2
+            padded = np.zeros(new_len)
+            padded[:h_len] = h_np
+            h_img = padded.reshape(side + 1, side + 1)
+
+        norm_h_img = (h_img - h_img.min()) / (h_img.max() - h_img.min() + 1e-9)
+
+        # Plot input
+        axs3[i, 0].imshow(x_img, cmap="gray")
+        axs3[i, 0].set_title("Input", fontsize=8)
+        axs3[i, 0].axis("off")
+
+        # Plot reshaped activation
+        im = axs3[i, 1].imshow(norm_h_img, cmap="viridis")
+        axs3[i, 1].set_title("Reshaped h", fontsize=8)
+        axs3[i, 1].axis("off")
+
+        # Add colorbar for each reshaped activation
+        cbar = fig3.colorbar(im, ax=axs3[i, 1], fraction=0.046, pad=0.04)
+        cbar.ax.tick_params(labelsize=5)
+
+    plt.tight_layout()
+    plt.savefig(f"{act_save_dir}/epoch_{epoch}_x_vs_h_reshaped.png", dpi=200)
+    plt.close(fig3)
+
+def plot_misclassified_examples(
+    model, data_loader, device, epoch, save_dir, max_samples=10
+):
+    model.eval()
+    misclassified = []
+
+    with torch.no_grad():
+        for batch_idx, (inputs, labels) in enumerate(data_loader):
+            inputs, labels = inputs.to(device), labels.to(device)
+
+            print(f"\n[Epoch {epoch}] Batch {batch_idx}")
+            print(f"  inputs.shape: {inputs.shape}")
+            print(f"  inputs.min(): {inputs.min().item():.4f}")
+            print(f"  inputs.max(): {inputs.max().item():.4f}")
+            print(f"  inputs.mean(): {inputs.mean().item():.4f}")
+
+            # Get inference activations and predictions
+            inference_out = model.layers["SoftHebbian1"].inference(inputs)
+            a = inference_out.a  # Cosine similarities
+            h = model.layers["SoftHebbian1"].y(a)  # Output from inhibition function
+
+            print(f"  a.shape (cosine sim): {a.shape}")
+            print(f"  a.min(): {a.min().item():.4e}")
+            print(f"  a.max(): {a.max().item():.4e}")
+            print(f"  a.mean(): {a.mean().item():.4e}")
+            print(f"  a[0][:10]: {a[0][:10].tolist()}  # First 10 cosine sim of sample 0")
+
+            print(f"  h.shape: {h.shape}")
+            print(f"  h.min(): {h.min().item():.4e}")
+            print(f"  h.max(): {h.max().item():.4e}")
+            print(f"  h.mean(): {h.mean().item():.4e}")
+            print(f"  h[0][:10]: {h[0][:10].tolist()}  # First 10 activations of sample 0")
+
+            row_means = h.mean(dim=1)  # Average activation per input sample
+            print(f"  h row-wise mean: {[round(v.item(), 6) for v in row_means]}")
+
+            y_pred = model.layers["SoftHebbian2"](h)
+            pred_labels = y_pred.argmax(dim=1)
+
+            for i in range(inputs.size(0)):
+                if pred_labels[i] != labels[i]:
+                    misclassified.append(
+                        (
+                            inputs[i].cpu(),
+                            pred_labels[i].item(),
+                            labels[i].item(),
+                            h[i].cpu(),
+                        )
+                    )
+                if len(misclassified) >= max_samples:
+                    break
+            if len(misclassified) >= max_samples:
+                break
 
 class BaseSoftExperiment(Experiment):
     """
@@ -166,27 +844,27 @@ class BaseSoftExperiment(Experiment):
             tqdm(train_data_loader, desc="Training batch", leave=False)
         ):
 
-            # Test model at intervals of samples seen
-            if self.check_test(self.SAMPLES):
-                # Pause train timer and add to total time
-                train_pause_time: float = time.time()
-                self.TRAIN_TIME += train_pause_time - train_start
-
-                self._testing(
-                    self.test_data_loader,
-                    Purposes.TEST_ACCURACY,
-                    self.data_name,
-                    ExperimentPhases.BASE,
-                )
-
-                self._testing(
-                    self.train_data_loader,
-                    Purposes.TRAIN_ACCURACY,
-                    self.data_name,
-                    ExperimentPhases.BASE,
-                )
-
-                train_start = time.time()
+            # # Test model at intervals of samples seen
+            # if self.check_test(self.SAMPLES):
+            #     # Pause train timer and add to total time
+            #     train_pause_time: float = time.time()
+            #     self.TRAIN_TIME += train_pause_time - train_start
+            #
+            #     self._testing(
+            #         self.test_data_loader,
+            #         Purposes.TEST_ACCURACY,
+            #         self.data_name,
+            #         ExperimentPhases.BASE,
+            #     )
+            #
+            #     self._testing(
+            #         self.train_data_loader,
+            #         Purposes.TRAIN_ACCURACY,
+            #         self.data_name,
+            #         ExperimentPhases.BASE,
+            #     )
+            #
+            #     train_start = time.time()
 
             inputs, labels = (
                 inputs.to(self.device).float(),
@@ -399,12 +1077,31 @@ class BaseSoftExperiment(Experiment):
                 self.train_data_loader, epoch, self.data_name, ExperimentPhases.BASE
             )
 
-            if (epoch + 1) % 100 == 0:
-                for name, layer in self.model.layers.items():
-                    if hasattr(layer, "weight"):
-                        save_dir = os.path.join(weight_matrix_save_path, name)
-                        plot_weight_heatmap(layer.weight, name, epoch + 1, save_dir)
+            # if epoch + 1 == 500:
+            #     model_path = os.path.join(
+            #         get_root_dir(), "checkpoints", f"{self.EXP_NAME}_epoch500.pt"
+            #     )
+            #     os.makedirs(os.path.dirname(model_path), exist_ok=True)
+            #     torch.save(self.model.state_dict(), model_path)
+            #     self.EXP_LOG.info(f"Saved model weights at epoch 500 to: {model_path}")
 
+            # if (epoch + 1) % 50 == 0:
+            #     for name, layer in self.model.layers.items():
+            #         if hasattr(layer, "weight"):
+            #             save_dir = os.path.join(weight_matrix_save_path, name)
+            #             if name == "SoftHebbian1":
+            #                 plot_weight_grid(layer.weight, name, epoch + 1, save_dir)
+            #             else:
+            #                 plot_weight_heatmap(layer.weight, name, epoch + 1, save_dir)
+            #
+            #     plot_misclassified_examples_original(
+            #         self.model,
+            #         self.test_data_loader,
+            #         self.device,
+            #         epoch + 1,
+            #         save_dir=f"{root_dir}/plots/misclassified/{self.EXP_NAME}",
+            #         max_samples=20,
+            #     )
             testing_acc.append(
                 self._testing(
                     self.test_data_loader,
