@@ -1,15 +1,11 @@
-import argparse
 from typing import List, Tuple
 
+from experiments.base_softhebb_experiment import BaseSoftExperiment
 from experiments.forget_softhebb_experiment import ForgetExperiment
 from interfaces.experiment import Experiment
 from interfaces.network import Network
 from models.MLP.baseline_mlp import MLPBaseline
-from utils.experiment_utils.experiment_logger import configure_logger
 from utils.experiment_utils.experiment_parser import *
-
-# Create log
-results_log = configure_logger("Forget Result Log", "./results/results_forget.log")
 
 
 def run_experiment_direct(
@@ -19,6 +15,7 @@ def run_experiment_direct(
 
     model: Network = MLPBaseline(
         params.K,
+        params.epsilon,
         params.focus,
         params.hsize,
         params.lamb,
@@ -33,7 +30,7 @@ def run_experiment_direct(
     experiment: Experiment = ForgetExperiment(
         model,
         params,
-        f"-{params.experiment_name}-{params.experiment_type.lower()}-{params.lr}--{params.heb_learn.lower()}-{params.heb_growth.lower()}-{params.heb_focus.lower()}-{params.heb_inhib.lower()}-{params.heb_lamb}---{params.class_learn.lower()}-{params.class_growth.lower()}-{params.class_focus.lower()}-0",
+        f"-{params.experiment_name}-{params.experiment_type.lower()}-{params.lr}--",
     )
     accuracies = list(experiment.run())
     experiment.cleanup()
@@ -43,8 +40,31 @@ def run_experiment_direct(
     return train_acc, test_acc
 
 
-if __name__ == "__main__":
-    import sys
+def run_experiment_direct_iid(
+    arg_list: List[str],
+) -> Tuple[Tuple[List[float], List[float]], str]:
+    params = parse_arguments(arg_list)
 
-    run_experiment_direct(sys.argv[1:])
-    print("Process Completed.")
+    model: Network = MLPBaseline(
+        params.K,
+        params.epsilon,
+        params.focus,
+        params.hsize,
+        params.lamb,
+        params.w_lr,
+        params.b_lr,
+        params.l_lr,
+        params.nclasses,
+        params.device,
+        params.weight_growth,
+    )
+
+    experiment: Experiment = BaseSoftExperiment(
+        model,
+        params,
+        f"-{params.experiment_name}-{params.experiment_type.lower()}-{params.lr}--",
+    )
+    final, tuple_results = experiment.run()
+    experiment.cleanup()
+
+    return tuple_results, params.experiment_name

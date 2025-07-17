@@ -1,8 +1,12 @@
 import itertools
 import logging
+import traceback
+
+from tqdm import tqdm
 
 from tests.sequential_tests.base_scripts_seq.seq_train_forget import *
 from utils.experiment_utils.experiment_logger import *
+from utils.plotting.plot_accuracy_list import *
 from utils.utils_root import *
 from utils.utils_root import get_project_root
 
@@ -16,82 +20,117 @@ project_root = get_project_root(levels_up=1)
 # Experiment parameters
 batch_sizes = [16]
 hidden_sizes = [1024]
-parameter_pairs = [(0.5, 1, 0.003)]
-other_parameters = [("sanger", "sigmoid", "sigmoid", "neuron", "RELU", "neuron")]
-K = 1
+parameter_pairs = [(0.5, 0.01)]
+K_values = [1]
+epsilons = [0.00001]
 focuses = ["NEURON"]
 growth_parameters = ["LINEAR"]
 
+seeds = [734892, 158207, 945610, 382915, 601384, 294761, 860137, 473029, 117538, 509362]
+#seeds = [734892]
+
+training_list = []
+testing_list = []
+weight_list = []
+lambda_list = []
+
 
 # Sequential execution
-for focus in focuses:
-    for growth in growth_parameters:
-        for batch_size, hsize in itertools.product(batch_sizes, hidden_sizes):
-            for lmbda, rho, lr in parameter_pairs:
-                for (
-                    heb_learn,
-                    heb_growth,
-                    clas_growth,
-                    heb_focus,
-                    heb_inhib,
-                    class_focus,
-                ) in other_parameters:
-                    exp_name = f"focus:{focus}_K{K}_SOFTHEBB_BATCH{batch_size}_HSIZE{hsize}_{growth.upper()}_{growth.upper()}"
+for seed in tqdm(seeds, desc="Seed"):
+    for K in tqdm(K_values, desc="Hyperparamater: K Values."):
+        for epsilon in tqdm(epsilons, desc="Hyperparamater: epsilon."):
+            for focus in tqdm(focuses, desc=f"Hyperparamater: focus."):
+                tqdm.write(f"{focus}-wise focus.")
+                for growth in tqdm(growth_parameters, desc="Hyperparmater: Growth."):
+                    for batch_size, hsize in itertools.product(
+                        batch_sizes, hidden_sizes
+                    ):
+                        for lmbda, lr in parameter_pairs:
+                            exp_name = f"SEED: {seed} || focus:{focus} || K{K} || SOFTHEBB_BATCH{batch_size} || HSIZE{hsize} || {growth.upper()}"
+                            args_list = [
+                                "--data_name=MNIST",
+                                f"--experiment_name={exp_name}",
+                                f"--train_data={project_root}/data/mnist/train-images.idx3-ubyte",
+                                f"--train_label={project_root}/data/mnist/train-labels.idx1-ubyte",
+                                f"--test_data={project_root}/data/mnist/test-images.idx3-ubyte",
+                                f"--test_label={project_root}/data/mnist/test-labels.idx1-ubyte",
+                                "--train_size=60000",
+                                "--test_size=10000",
+                                "--classes=10",
+                                f"--train_fname={project_root}/data/mnist/mnist_train.csv",
+                                f"--test_fname={project_root}/data/mnist/mnist_test.csv",
+                                "--input_dim=784",
+                                "--output_dim=10",
+                                "--heb_gam=0.99",
+                                "--heb_eps=0.0001",
+                                "--sub_experiment_scope_list=[[0,1],[2,3],[4,5],[6,7],[8,9]]",
+                                f"--lamb={lmbda}",
+                                "--heb_act=normalized",
+                                "--class_learn=OUTPUT_CONTRASTIVE",
+                                "--class_bias=no_bias",
+                                "--class_act=normalized",
+                                "--alpha=0",
+                                "--beta=0.01",
+                                "--sigma=1",
+                                "--mu=0",
+                                f"--w_lr={lr}",
+                                "--l_lr=0.01",
+                                "--b_lr=0.01",
+                                "--init=uniform",
+                                f"--hsize={hsize}",
+                                f"--batch_size={batch_size}",
+                                "--epochs=500",
+                                f"--device={'cuda'}",
+                                "--local_machine=True",
+                                "--experiment_type=forget",
+                                f"--K={K}",
+                                f"--focus={focus}",
+                                f"--weight_growth={growth}",
+                                f"--epsilon={epsilon}",
+                                f"--seed={seed}",
+                            ]
 
-                    args_list = [
-                        "--data_name=MNIST",
-                        f"--experiment_name={exp_name}",
-                        f"--train_data={project_root}/data/mnist/train-images.idx3-ubyte",
-                        f"--train_label={project_root}/data/mnist/train-labels.idx1-ubyte",
-                        f"--test_data={project_root}/data/mnist/test-images.idx3-ubyte",
-                        f"--test_label={project_root}/data/mnist/test-labels.idx1-ubyte",
-                        "--train_size=60000",
-                        "--test_size=10000",
-                        "--classes=10",
-                        f"--train_fname={project_root}/data/mnist/mnist_train.csv",
-                        f"--test_fname={project_root}/data/mnist/mnist_test.csv",
-                        "--input_dim=784",
-                        f"--heb_dim={hsize}",
-                        "--output_dim=10",
-                        "--heb_gam=0.99",
-                        "--heb_eps=0.0001",
-                        "--sub_experiment_scope_list=[[0,1],[2,3],[4,5],[6,7],[8,9]]",
-                        f"--heb_inhib={heb_inhib}",
-                        f"--heb_focus={heb_focus}",
-                        f"--heb_growth={heb_growth}",
-                        f"--heb_learn={heb_learn}",
-                        f"--heb_lamb={lmbda}",
-                        f"--heb_rho={rho}",
-                        "--heb_act=normalized",
-                        "--class_learn=OUTPUT_CONTRASTIVE",
-                        f"--class_growth={clas_growth}",
-                        "--class_bias=no_bias",
-                        f"--class_focus={class_focus}",
-                        "--class_act=normalized",
-                        f"--lr={lr}",
-                        "--sigmoid_k=1",
-                        "--alpha=0",
-                        "--beta=0.01",
-                        "--sigma=1",
-                        "--mu=0",
-                        "--w_lr=0.003",
-                        "--l_lr=0.003",
-                        "--b_lr=0.003",
-                        "--init=uniform",
-                        f"--hsize={hsize}",
-                        f"--batch_size={batch_size}",
-                        "--epochs=10",
-                        f"--device={'cuda'}",
-                        "--local_machine=True",
-                        "--experiment_type=forget",
-                        f"--K={K}",
-                        f"--focus={focus}",
-                        f"--weight_growth={growth}",
-                    ]
+                            try:
+                                logging.info(
+                                    f"Running sequential experiment: {exp_name}"
+                                )
+                                tuple_results, exp_name = run_experiment_direct_iid(
+                                    args_list
+                                )
+                                training_list.append(tuple_results[0])
+                                testing_list.append(tuple_results[1])
+                                weight_list.append(tuple_results[2])
+                                lambda_list.append(tuple_results[3])
+                                exp_name = exp_name + f"_{seed}"
+                                plot_acc(tuple_results[1], exp_name, "Testing Accuracy")
+                                plot_acc(
+                                    tuple_results[2],
+                                    f"Weight norm over epochs_{seed}",
+                                    "Weight Norm",
+                                )
+                                plot_acc(
+                                    tuple_results[3],
+                                    f"Lambda values over epochs_{seed}",
+                                    "Lambda",
+                                )
+                                logging.info(f"Completed: {exp_name}")
+                            except Exception as e:
+                                logging.error(f"Error in {exp_name}: {e}")
+                                print(traceback.format_exc())
 
-                    try:
-                        logging.info(f"Running sequential experiment: {exp_name}")
-                        run_experiment_direct(args_list)
-                        logging.info(f"Completed: {exp_name}")
-                    except Exception as e:
-                        logging.error(f"Error in {exp_name}: {e}")
+
+training_avg = average_lists(training_list)
+testing_avg = average_lists(testing_list)
+weight_avg = average_lists(weight_list)
+lambda_avg = average_lists(lambda_list)
+plot_acc(testing_avg, "Average Testing Accuracy over all seeds.", "Testing Accuracy")
+plot_acc(
+    weight_avg,
+    f"Weight norm over all seeds.",
+    "Weight Norm",
+)
+plot_acc(
+    lambda_avg,
+    f"Lambda values over all seeds.",
+    "Lambda",
+)

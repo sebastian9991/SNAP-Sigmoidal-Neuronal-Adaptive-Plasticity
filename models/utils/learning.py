@@ -1,8 +1,38 @@
 import scipy
 import torch
+import torch.nn.functional as F
 
 from models.utils.hyperparams import Inhibition
 from utils.experiment_utils.experiment_constants import Focus, WeightGrowth
+from utils.experiment_utils.experiment_logger import *
+
+
+def custom_hinge_plus(x):
+    return torch.clamp(x, min=0)
+
+
+def custom_hinge_minus(x):
+    return -1 * torch.clamp(x, max=0)
+
+
+def update_k(optimizer, K, weights, focus, threshold, p=0.5):
+    optimizer.zero_grad()
+
+    if focus == Focus.NEURON:
+        weight_norm = torch.norm(weights, dim=1, keepdim=True)
+    elif focus == Focus.SYNAPSE:
+        weight_norm = torch.abs(weights)
+    else:
+        ValueError("Unknown Focus")
+
+    hinge_input = (1 - weight_norm / K) - threshold
+    loss_tensor = p * custom_hinge_plus(hinge_input) + (1 - p) * custom_hinge_minus(
+        hinge_input
+    )
+    loss = loss_tensor.mean()
+
+    loss.backward()
+    optimizer.step()
 
 
 def softhebb_input_difference(x, a, normalized_weights):
@@ -24,6 +54,7 @@ def update_softhebb_w(
     normed_x,
     a,
     weights,
+    epsilon,
     inhibition: Inhibition,
     u=None,
     target=None,
@@ -36,6 +67,9 @@ def update_softhebb_w(
         batch_dim, out_dim = y.shape
         wn = weight_norms.unsqueeze(0)
         factor = 1 / (wn + 1e-9)
+        # print("===========START")
+        # print("  pre-gate factor min/max:", factor.min().item(), factor.max().item())
+        # print("  wn range:", wn.min().item(), wn.max().item())
         if weight_growth == WeightGrowth.LINEAR:
             factor *= 1
         elif weight_growth == WeightGrowth.SIGMOID:
@@ -62,6 +96,7 @@ def update_softhebb_w(
         delta_w = torch.mean(
             delta_w, dim=0
         )  # average the delta weights over the batch dim
+
     elif focus == Focus.SYNAPSE:
         batch_dim, out_dim = y.shape
         w = torch.abs(weights)  # Element-wise absoluate value for |Wij|
@@ -95,7 +130,7 @@ def update_softhebb_w(
     else:
         raise NotImplementedError(f"Focus paramater {focus} is not valid.")
 
-    return delta_w, wn / K
+    return delta_w, K
 
 
 def update_softhebb_b(y, logprior, target=None, supervised=False):

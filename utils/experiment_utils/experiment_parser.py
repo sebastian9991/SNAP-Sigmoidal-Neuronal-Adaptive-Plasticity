@@ -86,24 +86,16 @@ def parse_arguments(args_list: Optional[List] = None) -> argparse.Namespace:
     parser.add_argument("--heb_lamb", type=float, default=15)
     parser.add_argument("--heb_gam", type=float, default=0.99)
     parser.add_argument("--heb_eps", type=float, default=0.01)
-    parser.add_argument("--heb_rho", type=float, default=0.01)
-    parser.add_argument("--heb_learn", type=str, default="Sanger")
-    parser.add_argument("--heb_inhib", type=str, default="Relu")
-    parser.add_argument("--heb_growth", type=str, default="Linear")
     parser.add_argument("--heb_bias", type=str, default="No_Bias")
-    parser.add_argument("--heb_focus", type=str, default="Synapse")
     parser.add_argument("--heb_act", type=str, default="Normalized")
 
     # Classification layer hyperparameters
     parser.add_argument("--class_learn", type=str, default="Controlled")
-    parser.add_argument("--class_growth", type=str, default="Linear")
     parser.add_argument("--class_bias", type=str, default="No_Bias")
-    parser.add_argument("--class_focus", type=str, default="Synapse")
     parser.add_argument("--class_act", type=str, default="Basic")
 
     # Shared hyperparameters
     parser.add_argument("--lr", type=float, default=0.005)
-    parser.add_argument("--sigmoid_k", type=float, default=1)
     parser.add_argument("--alpha", type=float, default=0)
     parser.add_argument("--beta", type=float, default=10e-7)
     parser.add_argument("--sigma", type=float, default=1)
@@ -118,7 +110,7 @@ def parse_arguments(args_list: Optional[List] = None) -> argparse.Namespace:
     parser.add_argument("--local_machine", type=bool, default=True)
     parser.add_argument("--experiment_type", type=str, default="base")
 
-    # New Arugments for new model
+    # Softhebb Paramaters
     parser.add_argument("--hsize", type=int, default=64)
     parser.add_argument("--lamb", type=float, default=5.0)
     parser.add_argument("--w_lr", type=float, default=0.005)
@@ -140,6 +132,12 @@ def parse_arguments(args_list: Optional[List] = None) -> argparse.Namespace:
         choices=list((WeightGrowth)),
         help="Specifies the weight growth of each softhebb layer.",
     )
+    parser.add_argument(
+        "--epsilon", type=float, default=0.01, help="epsilon for incrementing K."
+    )
+
+    # Seed arguments
+    parser.add_argument("--seed", type=int, default=42)
 
     # Parse arguments into Namespace
     args: argparse.Namespace = (
@@ -147,5 +145,3 @@ def parse_arguments(args_list: Optional[List] = None) -> argparse.Namespace:
     )
 
     return args
-
-

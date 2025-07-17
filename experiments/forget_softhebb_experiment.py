@@ -3,8 +3,6 @@ import ast
 import os
 import shutil
 import time
-from argparse import Namespace
-from collections import Counter
 from typing import Tuple, Type, Union
 
 import torch
@@ -25,6 +23,14 @@ from utils.experiment_utils.experiment_parser import *
 from utils.experiment_utils.experiment_timer import *
 
 
+# def set_global_seed(seed: int = 42):
+#     torch.manual_seed(seed)
+#     if torch.cuda.is_available():
+#         torch.cuda.manual_seed_all(seed)
+#     torch.backends.cudnn.deterministic = True
+#     torch.backends.cudnn.benchmark = False
+
+
 class ForgetExperiment(Experiment):
     """Stage 1: Experiement set-up."""
 
@@ -39,6 +45,8 @@ class ForgetExperiment(Experiment):
             None
         """
         super().__init__(model, args, name)
+
+        # set_global_seed(args.seed)
 
         dataset_mapping = {member.name.upper(): member for member in DataSets}
         self.dataset = dataset_mapping[self.data_name.upper()]
@@ -76,16 +84,15 @@ class ForgetExperiment(Experiment):
 
         # Subexperiment scope list set up
         # Convert the string argument to a list of lists
-        print(args.sub_experiment_scope_list)
         self.sub_experiment_scope_list = ast.literal_eval(
             args.sub_experiment_scope_list
         )
 
         # Dataloader setup
-        self.sub_experiemnts_train_dataloader_list: list[DataLoader] = (
+        self.sub_experiments_train_dataloader_list: list[DataLoader] = (
             self._setup_dataloaders(self.train_data_set, self.sub_experiment_scope_list)
         )
-        self.sub_experiemnts_test_dataloader_list: list[DataLoader] = (
+        self.sub_experiments_test_dataloader_list: list[DataLoader] = (
             self._setup_dataloaders(self.test_data_set, self.sub_experiment_scope_list)
         )
 
@@ -157,7 +164,7 @@ class ForgetExperiment(Experiment):
     def _setup_test_dataloader_dictionary(self) -> None:
 
         for label_value_list, curr_test_dataloader in zip(
-            self.sub_experiment_scope_list, self.sub_experiemnts_test_dataloader_list
+            self.sub_experiment_scope_list, self.sub_experiments_test_dataloader_list
         ):
 
             subdirectory_name = (
@@ -177,8 +184,8 @@ class ForgetExperiment(Experiment):
             self.sub_experiment_train_timers[subdirectory_name] = 0
             self.sub_experiment_test_timers[subdirectory_name] = 0
 
-        print(self.sub_experiment_train_timers)
-        print(self.sub_experiment_test_timers)
+        # print(self.sub_experiment_train_timers)
+        # print(self.sub_experiment_test_timers)
 
     """
     Stage 2: Training and evaluation
@@ -193,10 +200,10 @@ class ForgetExperiment(Experiment):
             self.SUB_EXP_SAMPLES = 0
 
             curr_train_dataloader: DataLoader = (
-                self.sub_experiemnts_train_dataloader_list[step]
+                self.sub_experiments_train_dataloader_list[step]
             )
             curr_test_dataloader: DataLoader = (
-                self.sub_experiemnts_test_dataloader_list[step]
+                self.sub_experiments_test_dataloader_list[step]
             )
             self.curr_folder_path: str = os.path.join(
                 self.RESULT_PATH,
@@ -309,6 +316,12 @@ class ForgetExperiment(Experiment):
             f"Training of epoch #{epoch} took {time_to_str(total_added_train_time)}."
         )
         self.EXP_LOG.info("Completed '_training' function for forget experiment")
+        total_norm = (
+            torch.nn.utils.parameters_to_vector(self.model.parameters()).norm(2).item()
+        )
+        self.WEIGHT_LOG.info(
+            f"Model weight L2 norm after epoch #{epoch}: {total_norm:.4f}"
+        )
         for layer in self.model.modules():
             # Check if the layer is an instance of SoftHebbLayer
             if hasattr(layer, "plot_wn_distribution") and callable(
@@ -421,10 +434,10 @@ class ForgetExperiment(Experiment):
         for step in range(len(self.sub_experiment_scope_list)):
 
             curr_train_dataloader: DataLoader = (
-                self.sub_experiemnts_train_dataloader_list[step]
+                self.sub_experiments_train_dataloader_list[step]
             )
             curr_test_dataloader: DataLoader = (
-                self.sub_experiemnts_test_dataloader_list[step]
+                self.sub_experiments_test_dataloader_list[step]
             )
             self.curr_folder_path: str = os.path.join(
                 self.RESULT_PATH,

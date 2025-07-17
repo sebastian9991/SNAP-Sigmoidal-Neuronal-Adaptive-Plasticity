@@ -4,7 +4,7 @@ import os
 import shutil
 import time
 from abc import ABC
-from typing import List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 
 # Pytorch imports
 from torch.utils.data import DataLoader
@@ -46,6 +46,8 @@ class Experiment(ABC):
         PARAM_LOG (logging.Logger): parameter log for experiment
         DEBUG_LOG (logging.Logger): debugging
         EXP_LOG (logging.Logger): logging of experiment process
+        WEIGHT_LOG (logging.Logger): logging of weight norm
+        LAMBDA_LOG (logging.Logger): logging of lambda
     """
 
     def __init__(self, model: Network, args: argparse.Namespace, name: str) -> None:
@@ -136,6 +138,12 @@ class Experiment(ABC):
         self.EXP_LOG: logging.Logger = configure_logger(
             "Experiment Log", f"{self.RESULT_PATH}/experiment_process.log"
         )  # Logs during experiment
+        self.WEIGHT_LOG: logging.Logger = configure_logger(
+            "Weight Log", f"{self.RESULT_PATH}/weight_process.log"
+        )  # Logs for weights
+        self.LAMBDA_LOG: logging.Logger = configure_logger(
+            "Lambda Log", f"{self.RESULT_PATH}/lambda_process.log"
+        )  # Logs for weights
 
         self.loggers.append(self.PRINT_LOG)
         self.loggers.append(self.TEST_LOG)
@@ -143,6 +151,8 @@ class Experiment(ABC):
         self.loggers.append(self.PARAM_LOG)
         self.loggers.append(self.DEBUG_LOG)
         self.loggers.append(self.EXP_LOG)
+        self.loggers.append(self.WEIGHT_LOG)
+        self.loggers.append(self.LAMBDA_LOG)
 
         # Logging of experiment
         self.EXP_LOG.info("Completed imports.")
@@ -151,6 +161,8 @@ class Experiment(ABC):
         self.EXP_LOG.info(
             f"Experiment '{self.EXP_NAME}' result folder created successfully."
         )
+        self.WEIGHT_LOG.info("Intialize weight-log.")
+        self.LAMBDA_LOG.info("Initalize lambda-log.")
 
     def _training(
         self,
@@ -159,7 +171,7 @@ class Experiment(ABC):
         dname: str,
         phase: ExperimentPhases,
         visualize: bool = True,
-    ) -> None:
+    ) -> Union[Tuple[List[float], List[float]], None]:
         raise NotImplementedError("This method was not implemented.")
 
     def _testing(
@@ -189,19 +201,19 @@ class Experiment(ABC):
     def _param_end_log(self) -> None:
         raise NotImplementedError("The method has not been implemented yet.")
 
-    def _experiment(self) -> None:
+    def _experiment(self) -> Union[Tuple[List[float], List[float], List[float], List[float]], None]:
         raise NotImplementedError("The method has not been implemented yet.")
 
     def _experiment_log(self) -> None:
         raise NotImplementedError("The method has not been implemented yet.")
 
-    def _final_test(self) -> Tuple[float, ...]:
+    def _final_test(self) -> Union[Tuple[float, ...], None]:
         raise NotImplementedError("The method has not been implemented yet.")
 
     def _final_test_log(self, results) -> None:
         raise NotImplementedError("The method has not been implemented yet.")
 
-    def run(self) -> Tuple[float, ...]:
+    def run(self) -> Tuple[Any, ...]:
         """
         METHOD
         Runs the experiment
@@ -215,7 +227,7 @@ class Experiment(ABC):
         self._param_start_log()
 
         # Training and Testing
-        self._experiment()
+        four_tuple = self._experiment()
         results = self._final_test()
 
         # Logging final parameters of experiment
@@ -225,7 +237,7 @@ class Experiment(ABC):
         self._end_log()
         self._param_end_log()
 
-        return results
+        return results, four_tuple
 
     def cleanup(self) -> None:
         """
